@@ -30,6 +30,7 @@ describe('formLogic toString fix', () => {
     const data = result.formData();
     expect(typeof data.submitForm).toBe('function');
     expect(typeof data.toggleAccordion).toBe('function');
+    expect(typeof data.translateOutbound).toBe('function');
     expect(data.showAdvanced).toBe(false);
   });
 });

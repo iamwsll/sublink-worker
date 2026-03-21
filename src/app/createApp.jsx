@@ -80,6 +80,7 @@ export function createApp(bindings = {}) {
             const ua = c.req.query('ua') || getRequestHeader(c.req, 'User-Agent') || DEFAULT_USER_AGENT;
             const groupByCountry = parseBooleanFlag(c.req.query('group_by_country'));
             const includeAutoSelect = c.req.query('include_auto_select') !== 'false';
+            const groupDefaults = parseGroupDefaults(c.req.query('group_defaults'));
             const enableClashUI = parseBooleanFlag(c.req.query('enable_clash_ui'));
             const externalController = c.req.query('external_controller');
             const externalUiDownloadUrl = c.req.query('external_ui_download_url');
@@ -111,7 +112,8 @@ export function createApp(bindings = {}) {
                 externalController,
                 externalUiDownloadUrl,
                 singboxConfigVersion,
-                includeAutoSelect
+                includeAutoSelect,
+                groupDefaults
             );
             await builder.build();
             return c.json(builder.config);
@@ -132,6 +134,7 @@ export function createApp(bindings = {}) {
             const ua = c.req.query('ua') || getRequestHeader(c.req, 'User-Agent') || DEFAULT_USER_AGENT;
             const groupByCountry = parseBooleanFlag(c.req.query('group_by_country'));
             const includeAutoSelect = c.req.query('include_auto_select') !== 'false';
+            const groupDefaults = parseGroupDefaults(c.req.query('group_defaults'));
             const enableClashUI = parseBooleanFlag(c.req.query('enable_clash_ui'));
             const externalController = c.req.query('external_controller');
             const externalUiDownloadUrl = c.req.query('external_ui_download_url');
@@ -155,7 +158,8 @@ export function createApp(bindings = {}) {
                 enableClashUI,
                 externalController,
                 externalUiDownloadUrl,
-                includeAutoSelect
+                includeAutoSelect,
+                groupDefaults
             );
             await builder.build();
             return c.text(builder.formatConfig(), 200, {
@@ -178,6 +182,7 @@ export function createApp(bindings = {}) {
             const ua = c.req.query('ua') || getRequestHeader(c.req, 'User-Agent') || DEFAULT_USER_AGENT;
             const groupByCountry = parseBooleanFlag(c.req.query('group_by_country'));
             const includeAutoSelect = c.req.query('include_auto_select') !== 'false';
+            const groupDefaults = parseGroupDefaults(c.req.query('group_defaults'));
             const configId = c.req.query('configId');
             const lang = c.get('lang');
 
@@ -195,7 +200,8 @@ export function createApp(bindings = {}) {
                 lang,
                 ua,
                 groupByCountry,
-                includeAutoSelect
+                includeAutoSelect,
+                groupDefaults
             );
             builder.setSubscriptionUrl(c.req.url);
             await builder.build();
@@ -232,6 +238,7 @@ export function createApp(bindings = {}) {
             const includeAutoSelect = c.req.query('include_auto_select') !== 'false';
             const groupByCountry = parseBooleanFlag(c.req.query('group_by_country'));
             const customRules = parseJsonArray(c.req.query('customRules'));
+            const groupDefaults = parseGroupDefaults(c.req.query('group_defaults'));
             const lang = c.get('lang');
 
             const config = generateSubconverterConfig({
@@ -239,7 +246,8 @@ export function createApp(bindings = {}) {
                 customRules,
                 lang,
                 includeAutoSelect,
-                groupByCountry
+                groupByCountry,
+                groupDefaults
             });
 
             return c.text(config, 200, {
@@ -418,6 +426,27 @@ function parseJsonArray(raw) {
         return Array.isArray(parsed) ? parsed : [];
     } catch {
         return [];
+    }
+}
+
+function parseGroupDefaults(raw) {
+    if (!raw) return {};
+    try {
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+            return {};
+        }
+        const normalized = {};
+        Object.entries(parsed).forEach(([groupName, preferred]) => {
+            if (typeof preferred !== 'string') return;
+            const key = groupName.trim();
+            const value = preferred.trim();
+            if (!key || !value) return;
+            normalized[key] = value;
+        });
+        return normalized;
+    } catch {
+        return {};
     }
 }
 

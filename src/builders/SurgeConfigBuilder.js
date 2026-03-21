@@ -2,10 +2,10 @@ import { BaseConfigBuilder } from './BaseConfigBuilder.js';
 import { groupProxiesByCountry } from '../utils.js';
 import { SURGE_CONFIG, SURGE_SITE_RULE_SET_BASEURL, SURGE_IP_RULE_SET_BASEURL, generateRules, getOutbounds, PREDEFINED_RULE_SETS, DIRECT_DEFAULT_RULES } from '../config/index.js';
 import { addProxyWithDedup } from './helpers/proxyHelpers.js';
-import { buildSelectorMembers, buildNodeSelectMembers, uniqueNames } from './helpers/groupBuilder.js';
+import { buildSelectorMembers, buildNodeSelectMembers, uniqueNames, applyGroupPreferredDefault } from './helpers/groupBuilder.js';
 
 export class SurgeConfigBuilder extends BaseConfigBuilder {
-    constructor(inputString, selectedRules, customRules, baseConfig, lang, userAgent, groupByCountry, includeAutoSelect = true) {
+    constructor(inputString, selectedRules, customRules, baseConfig, lang, userAgent, groupByCountry, includeAutoSelect = true, groupDefaults = {}) {
         const resolvedBaseConfig = baseConfig ?? SURGE_CONFIG;
         super(inputString, resolvedBaseConfig, lang, userAgent, groupByCountry, includeAutoSelect);
         this.selectedRules = selectedRules;
@@ -13,6 +13,7 @@ export class SurgeConfigBuilder extends BaseConfigBuilder {
         this.subscriptionUrl = null;
         this.countryGroupNames = [];
         this.manualGroupName = null;
+        this.groupDefaults = groupDefaults && typeof groupDefaults === 'object' ? groupDefaults : {};
     }
 
     setSubscriptionUrl(url) {
@@ -286,6 +287,7 @@ export class SurgeConfigBuilder extends BaseConfigBuilder {
                 if (DIRECT_DEFAULT_RULES.has(outbound)) {
                     options = ['DIRECT', ...options.filter(p => p !== 'DIRECT')];
                 }
+                options = applyGroupPreferredDefault(options, this.groupDefaults[outbound], this.t);
                 this.config['proxy-groups'].push(
                     this.createProxyGroup(name, 'select', options)
                 );

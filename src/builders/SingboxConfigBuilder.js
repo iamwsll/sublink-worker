@@ -3,11 +3,11 @@ import { SING_BOX_CONFIG, generateRuleSets, generateRules, getOutbounds, PREDEFI
 import { BaseConfigBuilder } from './BaseConfigBuilder.js';
 import { deepCopy, groupProxiesByCountry } from '../utils.js';
 import { addProxyWithDedup } from './helpers/proxyHelpers.js';
-import { buildSelectorMembers as buildSelectorMemberList, buildNodeSelectMembers, uniqueNames } from './helpers/groupBuilder.js';
+import { buildSelectorMembers as buildSelectorMemberList, buildNodeSelectMembers, uniqueNames, applyGroupPreferredDefault } from './helpers/groupBuilder.js';
 import { normalizeGroupName } from './helpers/groupNameUtils.js';
 
 export class SingboxConfigBuilder extends BaseConfigBuilder {
-    constructor(inputString, selectedRules, customRules, baseConfig, lang, userAgent, groupByCountry = false, enableClashUI = false, externalController, externalUiDownloadUrl, singboxVersion = '1.12', includeAutoSelect = true) {
+    constructor(inputString, selectedRules, customRules, baseConfig, lang, userAgent, groupByCountry = false, enableClashUI = false, externalController, externalUiDownloadUrl, singboxVersion = '1.12', includeAutoSelect = true, groupDefaults = {}) {
         const resolvedBaseConfig = baseConfig ?? SING_BOX_CONFIG;
         super(inputString, resolvedBaseConfig, lang, userAgent, groupByCountry, includeAutoSelect);
 
@@ -19,6 +19,7 @@ export class SingboxConfigBuilder extends BaseConfigBuilder {
         this.externalController = externalController;
         this.externalUiDownloadUrl = externalUiDownloadUrl;
         this.singboxVersion = singboxVersion;  // '1.11' or '1.12'
+        this.groupDefaults = groupDefaults && typeof groupDefaults === 'object' ? groupDefaults : {};
 
         if (this.config?.dns?.servers?.length > 0) {
             this.config.dns.servers[0].detour = this.t('outboundNames.Node Select');
@@ -210,6 +211,7 @@ export class SingboxConfigBuilder extends BaseConfigBuilder {
                 if (DIRECT_DEFAULT_RULES.has(outbound)) {
                     selectorMembers = ['DIRECT', ...selectorMembers.filter(p => p !== 'DIRECT')];
                 }
+                selectorMembers = applyGroupPreferredDefault(selectorMembers, this.groupDefaults[outbound], this.t);
                 this.config.outbounds.push({
                     type: "selector",
                     tag,

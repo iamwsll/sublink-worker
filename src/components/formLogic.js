@@ -1,4 +1,5 @@
 export const formLogicFn = (t) => {
+    const GROUP_DEFAULTS_SAVE_DEBOUNCE_MS = 120;
     window.formData = function () {
         // Inline parseSurgeConfigInput to make it available in toString()
         const parseSurgeValue = (rawValue = '') => {
@@ -85,6 +86,7 @@ export const formLogicFn = (t) => {
             subconverterCopied: false,
             groupByCountry: false,
             includeAutoSelect: true,
+            groupDefaults: {},
             enableClashUI: false,
             externalController: '',
             externalUiDownloadUrl: '',
@@ -106,6 +108,7 @@ export const formLogicFn = (t) => {
             customShortCode: '',
             parsingUrl: false,
             parseDebounceTimer: null,
+            groupDefaultsSaveTimer: null,
             // These will be populated from window.APP_TRANSLATIONS
             processingText: '',
             convertText: '',
@@ -133,6 +136,15 @@ export const formLogicFn = (t) => {
                 this.groupByCountry = localStorage.getItem('groupByCountry') === 'true';
                 this.includeAutoSelect = localStorage.getItem('includeAutoSelect') !== 'false';
                 this.enableClashUI = localStorage.getItem('enableClashUI') === 'true';
+                const savedGroupDefaults = localStorage.getItem('groupDefaults');
+                if (savedGroupDefaults) {
+                    try {
+                        const parsedDefaults = JSON.parse(savedGroupDefaults);
+                        if (parsedDefaults && typeof parsedDefaults === 'object' && !Array.isArray(parsedDefaults)) {
+                            this.groupDefaults = parsedDefaults;
+                        }
+                    } catch { }
+                }
                 this.externalController = localStorage.getItem('externalController') || '';
                 this.externalUiDownloadUrl = localStorage.getItem('externalUiDownloadUrl') || '';
                 this.customUA = localStorage.getItem('userAgent') || '';
@@ -164,6 +176,14 @@ export const formLogicFn = (t) => {
                 this.$watch('groupByCountry', val => localStorage.setItem('groupByCountry', val));
                 this.$watch('includeAutoSelect', val => localStorage.setItem('includeAutoSelect', val));
                 this.$watch('enableClashUI', val => localStorage.setItem('enableClashUI', val));
+                this.$watch('groupDefaults', val => {
+                    if (this.groupDefaultsSaveTimer) {
+                        clearTimeout(this.groupDefaultsSaveTimer);
+                    }
+                    this.groupDefaultsSaveTimer = setTimeout(() => {
+                        localStorage.setItem('groupDefaults', JSON.stringify(val || {}));
+                    }, GROUP_DEFAULTS_SAVE_DEBOUNCE_MS);
+                }, { deep: true });
                 this.$watch('externalController', val => localStorage.setItem('externalController', val));
                 this.$watch('externalUiDownloadUrl', val => localStorage.setItem('externalUiDownloadUrl', val));
                 this.$watch('customUA', val => localStorage.setItem('userAgent', val));
@@ -193,6 +213,20 @@ export const formLogicFn = (t) => {
                 }
             },
 
+            translateOutbound(name) {
+                const translated = window.APP_TRANSLATIONS?.outboundNames?.[name];
+                return translated || name;
+            },
+
+            ensureRuleDefaultIntegrity() {
+                const selected = new Set(this.selectedRules || []);
+                Object.keys(this.groupDefaults || {}).forEach((ruleName) => {
+                    if (!selected.has(ruleName)) {
+                        delete this.groupDefaults[ruleName];
+                    }
+                });
+            },
+
             getSubconverterUrl() {
                 const origin = window.location.origin;
                 const params = new URLSearchParams();
@@ -215,6 +249,11 @@ export const formLogicFn = (t) => {
 
                 if (!this.includeAutoSelect) {
                     params.append('include_auto_select', 'false');
+                }
+
+                this.ensureRuleDefaultIntegrity();
+                if (Object.keys(this.groupDefaults || {}).length > 0) {
+                    params.append('group_defaults', JSON.stringify(this.groupDefaults));
                 }
 
                 if (this.groupByCountry) {
@@ -380,6 +419,10 @@ export const formLogicFn = (t) => {
 
                     if (this.groupByCountry) params.append('group_by_country', 'true');
                     if (!this.includeAutoSelect) params.append('include_auto_select', 'false');
+                    this.ensureRuleDefaultIntegrity();
+                    if (Object.keys(this.groupDefaults || {}).length > 0) {
+                        params.append('group_defaults', JSON.stringify(this.groupDefaults));
+                    }
                     if (this.enableClashUI) params.append('enable_clash_ui', 'true');
                     if (this.externalController) params.append('external_controller', this.externalController);
                     if (this.externalUiDownloadUrl) params.append('external_ui_download_url', this.externalUiDownloadUrl);
@@ -622,6 +665,17 @@ export const formLogicFn = (t) => {
                 // Extract other parameters
                 this.groupByCountry = params.get('group_by_country') === 'true';
                 this.includeAutoSelect = params.get('include_auto_select') !== 'false';
+                const groupDefaults = params.get('group_defaults');
+                if (groupDefaults) {
+                    try {
+                        const parsed = JSON.parse(groupDefaults);
+                        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+                            this.groupDefaults = parsed;
+                        }
+                    } catch (e) {
+                        console.warn('Failed to parse group_defaults:', e);
+                    }
+                }
                 this.enableClashUI = params.get('enable_clash_ui') === 'true';
 
                 const externalController = params.get('external_controller');
@@ -647,9 +701,11 @@ export const formLogicFn = (t) => {
 
                 // Expand advanced options if any advanced settings are present
                 if (selectedRules || customRules || this.groupByCountry || this.enableClashUI ||
-                    externalController || externalUiDownloadUrl || ua || configId) {
+                    externalController || externalUiDownloadUrl || ua || configId || groupDefaults) {
                     this.showAdvanced = true;
                 }
+
+                this.ensureRuleDefaultIntegrity();
             }
         }
     }

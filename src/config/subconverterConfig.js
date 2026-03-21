@@ -13,6 +13,13 @@ const REJECT_RULES = new Set(['Ad Block']);
 
 const SPEED_TEST_URL = 'http://www.gstatic.com/generate_204';
 
+function movePreferredFirst(options = [], preferredOption = '') {
+	if (!preferredOption || typeof preferredOption !== 'string') return options;
+	const trimmed = preferredOption.trim();
+	if (!trimmed || !options.includes(trimmed)) return options;
+	return [trimmed, ...options.filter(item => item !== trimmed)];
+}
+
 /**
  * Escape special regex characters in a string for use inside subconverter regex
  */
@@ -37,7 +44,7 @@ function buildCountryGroupRefs(countryGroupNames) {
  * @param {boolean} options.groupByCountry - Whether to group proxies by country
  * @returns {string} INI format config string
  */
-export function generateSubconverterConfig({ selectedRules = [], customRules = [], lang = 'zh-CN', includeAutoSelect = true, groupByCountry = false } = {}) {
+export function generateSubconverterConfig({ selectedRules = [], customRules = [], lang = 'zh-CN', includeAutoSelect = true, groupByCountry = false, groupDefaults = {} } = {}) {
 	const t = createTranslator(lang);
 	const rules = generateRules(selectedRules, customRules);
 
@@ -167,20 +174,24 @@ export function generateSubconverterConfig({ selectedRules = [], customRules = [
 		if (REJECT_RULES.has(rule.outbound)) {
 			lines.push(`custom_proxy_group=${groupName}\`select\`[]REJECT\`[]DIRECT`);
 		} else if (DIRECT_DEFAULT_RULES.has(rule.outbound)) {
-			lines.push(`custom_proxy_group=${groupName}\`select\`[]DIRECT\`[]${nodeSelectName}`);
+			const options = movePreferredFirst(['DIRECT', nodeSelectName], groupDefaults[rule.outbound]);
+			lines.push(`custom_proxy_group=${groupName}\`select\`${options.map(item => `[]${item}`).join('`')}`);
 		} else {
 			if (groupByCountry) {
-				const refs = buildCountryGroupRefs(countryGroupNames);
 				if (includeAutoSelect) {
-					lines.push(`custom_proxy_group=${groupName}\`select\`[]${nodeSelectName}\`[]${autoSelectName}\`[]${manualSwitchName}\`${refs}\`[]DIRECT`);
+					const options = movePreferredFirst([nodeSelectName, autoSelectName, manualSwitchName, ...countryGroupNames, 'DIRECT'], groupDefaults[rule.outbound]);
+					lines.push(`custom_proxy_group=${groupName}\`select\`${options.map(item => `[]${item}`).join('`')}`);
 				} else {
-					lines.push(`custom_proxy_group=${groupName}\`select\`[]${nodeSelectName}\`[]${manualSwitchName}\`${refs}\`[]DIRECT`);
+					const options = movePreferredFirst([nodeSelectName, manualSwitchName, ...countryGroupNames, 'DIRECT'], groupDefaults[rule.outbound]);
+					lines.push(`custom_proxy_group=${groupName}\`select\`${options.map(item => `[]${item}`).join('`')}`);
 				}
 			} else {
 				if (includeAutoSelect) {
-					lines.push(`custom_proxy_group=${groupName}\`select\`[]${nodeSelectName}\`[]${autoSelectName}\`[]DIRECT\`.*`);
+					const options = movePreferredFirst([nodeSelectName, autoSelectName, 'DIRECT'], groupDefaults[rule.outbound]);
+					lines.push(`custom_proxy_group=${groupName}\`select\`${options.map(item => `[]${item}`).join('`')}\`.*`);
 				} else {
-					lines.push(`custom_proxy_group=${groupName}\`select\`[]${nodeSelectName}\`[]DIRECT\`.*`);
+					const options = movePreferredFirst([nodeSelectName, 'DIRECT'], groupDefaults[rule.outbound]);
+					lines.push(`custom_proxy_group=${groupName}\`select\`${options.map(item => `[]${item}`).join('`')}\`.*`);
 				}
 			}
 		}
