@@ -130,6 +130,7 @@ export const Form = (props) => {
           <i class="fas fa-filter text-gray-400"></i>
           {t('ruleSelection')}
         </h3>
+        <i class="fas fa-info-circle text-gray-400 hover:text-primary-500 cursor-help" title={t('ruleSelectionTooltip')}></i>
         <select x-model="selectedPredefinedRule" x-on:change="applyPredefinedRule()" class="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-sm font-medium text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-primary-500 focus:border-transparent">
         <option value="custom">{t('custom')}</option>
         <option value="minimal">{t('minimal')}</option>
