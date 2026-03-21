@@ -140,18 +140,32 @@ export const Form = (props) => {
 
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
     {UNIFIED_RULES.map((rule) => (
-      <label class="flex items-center p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors group">
-        <input
-          type="checkbox"
-          value={rule.name}
-          x-model="selectedRules" 
-                    x-on:change="selectedPredefinedRule = 'custom'"
-        class="w-4 h-4 text-primary-600 rounded border-gray-300 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600"
-                  />
-        <span class="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
-          {t(`outboundNames.${rule.name}`)}
-        </span>
-      </label>
+      <div class="p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+        <label class="flex items-center cursor-pointer group">
+          <input
+            type="checkbox"
+            value={rule.name}
+            x-model="selectedRules"
+            x-on:change="selectedPredefinedRule = 'custom'"
+            class="w-4 h-4 text-primary-600 rounded border-gray-300 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600"
+          />
+          <span class="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
+            {t(`outboundNames.${rule.name}`)}
+          </span>
+        </label>
+        <div x-show={`selectedRules.includes(${JSON.stringify(rule.name)})`} class="mt-3">
+          <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">{t('policyDefaultOption')}</label>
+          <select
+            x-model={`groupDefaults[${JSON.stringify(rule.name)}]`}
+            class="w-full px-2 py-1.5 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700 text-xs text-gray-700 dark:text-gray-200"
+          >
+            <option value="">{t('followBuiltInDefault')}</option>
+            <option value="Node Select" x-text="translateOutbound('Node Select')"></option>
+            <option value="DIRECT">DIRECT</option>
+            <option value="Auto Select" x-show="includeAutoSelect" x-text="translateOutbound('Auto Select')"></option>
+          </select>
+        </div>
+      </div>
     ))}
   </div>
 

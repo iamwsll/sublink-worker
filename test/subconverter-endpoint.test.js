@@ -152,6 +152,19 @@ describe('GET /subconverter', () => {
         expect(text).toMatch(/custom_proxy_group=.*谷歌服务.*select.*\[].*节点选择/);
     });
 
+    it('supports per-group default option override via group_defaults', async () => {
+        const app = createTestApp();
+        const rules = JSON.stringify(['Apple']);
+        const groupDefaults = JSON.stringify({ Apple: 'DIRECT' });
+        const res = await app.request(`http://localhost/subconverter?selectedRules=${encodeURIComponent(rules)}&group_defaults=${encodeURIComponent(groupDefaults)}`);
+        const text = await res.text();
+
+        const appleLine = text.split('\n').find(l => l.includes('苹果服务') && l.includes('`select`'));
+        expect(appleLine).toBeDefined();
+        // DIRECT should become the first choice
+        expect(appleLine).toMatch(/`select`\[]DIRECT`/);
+    });
+
     it('respects include_auto_select=false', async () => {
         const app = createTestApp();
         const res = await app.request('http://localhost/subconverter?selectedRules=minimal&include_auto_select=false');

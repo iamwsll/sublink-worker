@@ -3,7 +3,7 @@ import { CLASH_CONFIG, generateRules, generateClashRuleSets, getOutbounds, PREDE
 import { BaseConfigBuilder } from './BaseConfigBuilder.js';
 import { deepCopy, groupProxiesByCountry } from '../utils.js';
 import { addProxyWithDedup } from './helpers/proxyHelpers.js';
-import { buildSelectorMembers, buildNodeSelectMembers, uniqueNames } from './helpers/groupBuilder.js';
+import { buildSelectorMembers, buildNodeSelectMembers, uniqueNames, applyGroupPreferredDefault } from './helpers/groupBuilder.js';
 import { emitClashRules, sanitizeClashProxyGroups } from './helpers/clashConfigUtils.js';
 import { normalizeGroupName, findGroupIndexByName } from './helpers/groupNameUtils.js';
 
@@ -40,7 +40,7 @@ function supportsMrsFormat(userAgent) {
 }
 
 export class ClashConfigBuilder extends BaseConfigBuilder {
-    constructor(inputString, selectedRules, customRules, baseConfig, lang, userAgent, groupByCountry = false, enableClashUI = false, externalController, externalUiDownloadUrl, includeAutoSelect = true) {
+    constructor(inputString, selectedRules, customRules, baseConfig, lang, userAgent, groupByCountry = false, enableClashUI = false, externalController, externalUiDownloadUrl, includeAutoSelect = true, groupDefaults = {}) {
         if (!baseConfig) {
             baseConfig = CLASH_CONFIG;
         }
@@ -52,6 +52,7 @@ export class ClashConfigBuilder extends BaseConfigBuilder {
         this.enableClashUI = enableClashUI;
         this.externalController = externalController;
         this.externalUiDownloadUrl = externalUiDownloadUrl;
+        this.groupDefaults = groupDefaults && typeof groupDefaults === 'object' ? groupDefaults : {};
     }
 
     /**
@@ -383,6 +384,7 @@ export class ClashConfigBuilder extends BaseConfigBuilder {
                     if (DIRECT_DEFAULT_RULES.has(outbound)) {
                         proxies = ['DIRECT', ...proxies.filter(p => p !== 'DIRECT')];
                     }
+                    proxies = applyGroupPreferredDefault(proxies, this.groupDefaults[outbound], this.t);
                     const group = {
                         type: "select",
                         name,

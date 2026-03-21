@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import yaml from 'js-yaml';
 import { createApp } from '../src/app/createApp.jsx';
 import { MemoryKVAdapter } from '../src/adapters/kv/memoryKv.js';
 
@@ -75,6 +76,22 @@ describe('Worker', () => {
         expect(res.headers.get('content-type')).toContain('text/yaml');
         const text = await res.text();
         expect(text).toContain('proxies:');
+    });
+
+    it('GET /clash supports group_defaults to set outbound group default option', async () => {
+        const app = createTestApp();
+        const config = 'ss://YWVzLTEyOC1nY206dGVzdA@example.com:443#HK-Node-1';
+        const selectedRules = JSON.stringify(['Apple']);
+        const groupDefaults = JSON.stringify({ Apple: 'DIRECT' });
+        const res = await app.request(
+            `http://localhost/clash?config=${encodeURIComponent(config)}&selectedRules=${encodeURIComponent(selectedRules)}&group_defaults=${encodeURIComponent(groupDefaults)}`
+        );
+        expect(res.status).toBe(200);
+        const text = await res.text();
+        const parsed = yaml.load(text);
+        const appleGroup = (parsed['proxy-groups'] || []).find(g => g && g.name === '🍏 苹果服务');
+        expect(appleGroup).toBeDefined();
+        expect(appleGroup.proxies[0]).toBe('DIRECT');
     });
 
     it('GET /shorten-v2 returns short code', async () => {
