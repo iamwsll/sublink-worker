@@ -40,7 +40,7 @@ function supportsMrsFormat(userAgent) {
 }
 
 export class ClashConfigBuilder extends BaseConfigBuilder {
-    constructor(inputString, selectedRules, customRules, baseConfig, lang, userAgent, groupByCountry = false, enableClashUI = false, externalController, externalUiDownloadUrl, includeAutoSelect = true, groupDefaults = {}) {
+    constructor(inputString, selectedRules, customRules, baseConfig, lang, userAgent, groupByCountry = false, enableClashUI = false, externalController, externalUiDownloadUrl, includeAutoSelect = true, groupDefaults = {}, forceUdp = undefined) {
         if (!baseConfig) {
             baseConfig = CLASH_CONFIG;
         }
@@ -53,6 +53,7 @@ export class ClashConfigBuilder extends BaseConfigBuilder {
         this.externalController = externalController;
         this.externalUiDownloadUrl = externalUiDownloadUrl;
         this.groupDefaults = groupDefaults && typeof groupDefaults === 'object' ? groupDefaults : {};
+        this.forceUdp = typeof forceUdp === 'boolean' ? forceUdp : undefined;
     }
 
     /**
@@ -293,6 +294,9 @@ export class ClashConfigBuilder extends BaseConfigBuilder {
 
     addProxyToConfig(proxy) {
         this.config.proxies = this.config.proxies || [];
+        if (typeof this.forceUdp === 'boolean' && proxy && typeof proxy === 'object') {
+            proxy = { ...proxy, udp: this.forceUdp };
+        }
         addProxyWithDedup(this.config.proxies, proxy, {
             getName: (item) => item?.name,
             setName: (item, name) => {

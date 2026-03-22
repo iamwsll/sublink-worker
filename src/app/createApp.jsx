@@ -10,7 +10,7 @@ import { SingboxConfigBuilder } from '../builders/SingboxConfigBuilder.js';
 import { ClashConfigBuilder } from '../builders/ClashConfigBuilder.js';
 import { SurgeConfigBuilder } from '../builders/SurgeConfigBuilder.js';
 import { createTranslator, resolveLanguage } from '../i18n/index.js';
-import { encodeBase64, tryDecodeSubscriptionLines } from '../utils.js';
+import { encodeBase64, tryDecodeSubscriptionLines, parseBool } from '../utils.js';
 import { APP_NAME, APP_SUBTITLE } from '../constants.js';
 import { ShortLinkService } from '../services/shortLinkService.js';
 import { ConfigStorageService } from '../services/configStorageService.js';
@@ -139,6 +139,7 @@ export function createApp(bindings = {}) {
             const externalController = c.req.query('external_controller');
             const externalUiDownloadUrl = c.req.query('external_ui_download_url');
             const configId = c.req.query('configId');
+            const forceUdp = parseBool(c.req.query('udp'));
             const lang = c.get('lang');
 
             let baseConfig;
@@ -159,7 +160,8 @@ export function createApp(bindings = {}) {
                 externalController,
                 externalUiDownloadUrl,
                 includeAutoSelect,
-                groupDefaults
+                groupDefaults,
+                forceUdp
             );
             await builder.build();
             return c.text(builder.formatConfig(), 200, {
