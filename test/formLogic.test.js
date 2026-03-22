@@ -33,4 +33,21 @@ describe('formLogic toString fix', () => {
     expect(typeof data.translateOutbound).toBe('function');
     expect(data.showAdvanced).toBe(false);
   });
+
+  it('restores UDP option from URL and expands advanced options', () => {
+    const fakeWindow = {
+      APP_TRANSLATIONS: {},
+      PREDEFINED_RULE_SETS: {},
+      location: { href: 'https://example.com/', search: '' },
+      history: { replaceState: () => { } },
+      dispatchEvent: () => { }
+    };
+    const fn = new Function('window', '(' + formLogicFn.toString() + ')(); return window;');
+    const result = fn(fakeWindow);
+    const data = result.formData();
+    data.populateFormFromUrl(new URL('https://example.com/clash?config=abc&udp=true'));
+
+    expect(data.forceUdp).toBe(true);
+    expect(data.showAdvanced).toBe(true);
+  });
 });
