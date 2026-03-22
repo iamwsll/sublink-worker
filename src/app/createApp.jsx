@@ -221,7 +221,7 @@ export function createApp(bindings = {}) {
             let selectedRules;
 
             if (!rawSelectedRules) {
-                selectedRules = PREDEFINED_RULE_SETS.balanced;
+                selectedRules = PREDEFINED_RULE_SETS.default;
             } else if (PREDEFINED_RULE_SETS[rawSelectedRules]) {
                 selectedRules = PREDEFINED_RULE_SETS[rawSelectedRules];
             } else {
@@ -230,10 +230,10 @@ export function createApp(bindings = {}) {
                     if (Array.isArray(parsed)) {
                         selectedRules = parsed;
                     } else {
-                        return c.text('Invalid selectedRules: must be a preset name (minimal, balanced, comprehensive) or a JSON array', 400);
+                        return c.text('Invalid selectedRules: must be a preset name (default, minimal, balanced, comprehensive) or a JSON array', 400);
                     }
                 } catch {
-                    return c.text(`Invalid selectedRules: "${rawSelectedRules}" is not a valid preset name or JSON array. Valid presets: minimal, balanced, comprehensive`, 400);
+                    return c.text(`Invalid selectedRules: "${rawSelectedRules}" is not a valid preset name or JSON array. Valid presets: default, minimal, balanced, comprehensive`, 400);
                 }
             }
 

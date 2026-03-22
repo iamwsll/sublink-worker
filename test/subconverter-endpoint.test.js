@@ -29,19 +29,20 @@ describe('GET /subconverter', () => {
         expect(text).toContain('overwrite_original_rules=true');
     });
 
-    it('defaults to balanced preset when no selectedRules provided', async () => {
+    it('defaults to default preset when no selectedRules provided', async () => {
         const app = createTestApp();
         const res = await app.request('http://localhost/subconverter');
         const text = await res.text();
 
-        // balanced preset includes Google, Youtube, AI Services, Telegram, etc.
-        PREDEFINED_RULE_SETS.balanced.forEach(ruleName => {
+        // default preset includes ad block plus common service groups
+        PREDEFINED_RULE_SETS.default.forEach(ruleName => {
             // Each selected rule should produce at least one ruleset line
             // (either GEOSITE or GEOIP)
             expect(text).toMatch(/ruleset=/);
         });
 
-        // Check for specific rules from balanced set
+        // Check for specific rules from default set
+        expect(text).toContain('GEOSITE,category-ads-all');
         expect(text).toContain('GEOSITE,google');
         expect(text).toContain('GEOSITE,youtube');
         expect(text).toContain('GEOIP,telegram');
@@ -318,14 +319,15 @@ describe('GET /subconverter', () => {
             expect(text).toContain('must be a preset name');
         });
 
-        it('defaults to balanced when selectedRules is not provided', async () => {
+        it('defaults to default when selectedRules is not provided', async () => {
             const app = createTestApp();
             const res = await app.request('http://localhost/subconverter');
             expect(res.status).toBe(200);
             const text = await res.text();
-            // balanced preset includes Google and Youtube
+            // default preset includes Google and Youtube
             expect(text).toContain('GEOSITE,google');
             expect(text).toContain('GEOSITE,youtube');
+            expect(text).toContain('GEOSITE,category-ads-all');
         });
     });
 });
