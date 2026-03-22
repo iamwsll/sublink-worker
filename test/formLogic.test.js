@@ -50,4 +50,32 @@ describe('formLogic toString fix', () => {
     expect(data.forceUdp).toBe(true);
     expect(data.showAdvanced).toBe(true);
   });
+
+  it('applies preset rule defaults for the default template', () => {
+    const fakeWindow = {
+      APP_TRANSLATIONS: {},
+      PREDEFINED_RULE_SETS: {
+        default: ['Bilibili', 'Microsoft', 'Apple']
+      },
+      PREDEFINED_RULE_GROUP_DEFAULTS: {
+        default: {
+          Bilibili: 'DIRECT',
+          Microsoft: 'DIRECT',
+          Apple: 'DIRECT'
+        }
+      }
+    };
+    const fn = new Function('window', '(' + formLogicFn.toString() + ')(); return window;');
+    const result = fn(fakeWindow);
+    const data = result.formData();
+    data.selectedPredefinedRule = 'default';
+    data.applyPredefinedRule();
+
+    expect(data.selectedRules).toEqual(['Bilibili', 'Microsoft', 'Apple']);
+    expect(data.groupDefaults).toEqual({
+      Bilibili: 'DIRECT',
+      Microsoft: 'DIRECT',
+      Apple: 'DIRECT'
+    });
+  });
 });

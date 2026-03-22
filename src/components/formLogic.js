@@ -82,7 +82,7 @@ export const formLogicFn = (t) => {
                 ua: false          // User Agent
             },
             selectedRules: [],
-            selectedPredefinedRule: 'balanced',
+            selectedPredefinedRule: 'default',
             subconverterCopied: false,
             groupByCountry: false,
             includeAutoSelect: true,
@@ -213,6 +213,12 @@ export const formLogicFn = (t) => {
                 const rules = window.PREDEFINED_RULE_SETS;
                 if (rules && rules[this.selectedPredefinedRule]) {
                     this.selectedRules = rules[this.selectedPredefinedRule];
+                }
+                const defaults = window.PREDEFINED_RULE_GROUP_DEFAULTS;
+                if (defaults && defaults[this.selectedPredefinedRule]) {
+                    this.groupDefaults = { ...defaults[this.selectedPredefinedRule] };
+                } else {
+                    this.groupDefaults = {};
                 }
             },
 

@@ -8,6 +8,13 @@ import { parseSelectedRules } from '../src/app/createApp.jsx';
  */
 
 describe('selectedRules backward compatibility', () => {
+    it('should accept "default" preset name', () => {
+        const result = parseSelectedRules('default');
+        expect(result).toEqual(PREDEFINED_RULE_SETS.default);
+        expect(result).toContain('Ad Block');
+        expect(result).toContain('Non-China');
+    });
+
     it('should accept "minimal" preset name', () => {
         const result = parseSelectedRules('minimal');
         expect(result).toEqual(PREDEFINED_RULE_SETS.minimal);

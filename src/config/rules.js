@@ -102,9 +102,18 @@ export const UNIFIED_RULES = [
 export const DIRECT_DEFAULT_RULES = new Set(['Private', 'Location:CN']);
 
 export const PREDEFINED_RULE_SETS = {
+	default: ['Ad Block', 'AI Services', 'Bilibili', 'Youtube', 'Google', 'Private', 'Location:CN', 'Telegram', 'Github', 'Microsoft', 'Apple', 'Gaming', 'Non-China'],
 	minimal: ['Location:CN', 'Private', 'Non-China'],
 	balanced: ['Location:CN', 'Private', 'Non-China', 'Github', 'Google', 'Youtube', 'AI Services', 'Telegram'],
 	comprehensive: UNIFIED_RULES.map(rule => rule.name)
+};
+
+export const PREDEFINED_RULE_GROUP_DEFAULTS = {
+	default: {
+		Bilibili: 'DIRECT',
+		Microsoft: 'DIRECT',
+		Apple: 'DIRECT'
+	}
 };
 
 // Generate SITE_RULE_SETS and IP_RULE_SETS from UNIFIED_RULES

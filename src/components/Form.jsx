@@ -1,6 +1,6 @@
 /** @jsxRuntime automatic */
 /** @jsxImportSource hono/jsx */
-import { PREDEFINED_RULE_SETS, UNIFIED_RULES } from '../config/index.js';
+import { PREDEFINED_RULE_SETS, PREDEFINED_RULE_GROUP_DEFAULTS, UNIFIED_RULES } from '../config/index.js';
 import { CustomRules } from './CustomRules.jsx';
 import { TextareaWithActions } from './TextareaWithActions.jsx';
 import { ValidatedTextarea } from './ValidatedTextarea.jsx';
@@ -40,6 +40,7 @@ export const Form = (props) => {
   const scriptContent = `
     window.APP_TRANSLATIONS = ${JSON.stringify(translations)};
     window.PREDEFINED_RULE_SETS = ${JSON.stringify(PREDEFINED_RULE_SETS)};
+    window.PREDEFINED_RULE_GROUP_DEFAULTS = ${JSON.stringify(PREDEFINED_RULE_GROUP_DEFAULTS)};
     window.APP_LANG = ${JSON.stringify(lang || 'zh-CN')};
     if (typeof __name === 'undefined') { var __name = function(fn) { return fn; }; }
     (${formLogicFn.toString()})();
@@ -132,6 +133,7 @@ export const Form = (props) => {
         </h3>
         <select x-model="selectedPredefinedRule" x-on:change="applyPredefinedRule()" class="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-sm font-medium text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-primary-500 focus:border-transparent">
         <option value="custom">{t('custom')}</option>
+        <option value="default">{t('default')}</option>
         <option value="minimal">{t('minimal')}</option>
         <option value="balanced">{t('balanced')}</option>
         <option value="comprehensive">{t('comprehensive')}</option>
