@@ -164,6 +164,7 @@ export const Form = (props) => {
             <option value="">{t('followBuiltInDefault')}</option>
             <option value="Node Select" x-text="translateOutbound('Node Select')"></option>
             <option value="DIRECT">DIRECT</option>
+            {rule.name === 'Ad Block' && <option value="REJECT">REJECT</option>}
             <option value="Auto Select" x-show="includeAutoSelect" x-text="translateOutbound('Auto Select')"></option>
           </select>
         </div>
