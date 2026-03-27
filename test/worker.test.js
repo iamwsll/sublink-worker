@@ -25,6 +25,7 @@ describe('Worker', () => {
         expect(res.headers.get('content-type')).toContain('text/html');
         const text = await res.text();
         expect(text).toContain('Sublink Worker');
+        expect(text).toContain('<option value="REJECT">REJECT</option>');
     });
 
     it('GET /singbox returns JSON', async () => {
