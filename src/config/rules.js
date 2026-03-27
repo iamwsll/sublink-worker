@@ -110,6 +110,7 @@ export const PREDEFINED_RULE_SETS = {
 
 export const PREDEFINED_RULE_GROUP_DEFAULTS = {
 	default: {
+		'Ad Block': 'REJECT',
 		Bilibili: 'DIRECT',
 		Microsoft: 'DIRECT',
 		Apple: 'DIRECT'
