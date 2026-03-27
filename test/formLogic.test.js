@@ -59,6 +59,7 @@ describe('formLogic toString fix', () => {
       },
       PREDEFINED_RULE_GROUP_DEFAULTS: {
         default: {
+          'Ad Block': 'REJECT',
           Bilibili: 'DIRECT',
           Microsoft: 'DIRECT',
           Apple: 'DIRECT'
@@ -73,6 +74,7 @@ describe('formLogic toString fix', () => {
 
     expect(data.selectedRules).toEqual(['Bilibili', 'Microsoft', 'Apple']);
     expect(data.groupDefaults).toEqual({
+      'Ad Block': 'REJECT',
       Bilibili: 'DIRECT',
       Microsoft: 'DIRECT',
       Apple: 'DIRECT'
