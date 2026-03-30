@@ -70,10 +70,22 @@ describe('Issue #334: rule-provider key collision fix', () => {
     const yamlText = await builder.build();
     const config = yaml.load(yamlText);
 
-    const iCloudIdx = config.rules.findIndex(r => r.match(/^DOMAIN-KEYWORD,icloud\.com\.akadns\.net,/));
+    const iCloudIdx = config.rules.findIndex(r => r.match(/^RULE-SET,icloud-us,/));
     const appleIdx = config.rules.findIndex(r => r.match(/^RULE-SET,apple,/));
     expect(iCloudIdx).toBeGreaterThan(-1);
     expect(appleIdx).toBeGreaterThan(-1);
     expect(iCloudIdx).toBeLessThan(appleIdx);
+  });
+
+  it('icloud us provider should subscribe upstream URL directly', async () => {
+    const builder = new ClashConfigBuilder(SS_INPUT, 'default', [], null, 'zh-CN', 'mihomo/1.0');
+    const yamlText = await builder.build();
+    const config = yaml.load(yamlText);
+    const providers = config['rule-providers'];
+
+    expect(providers['icloud-us']).toBeDefined();
+    expect(providers['icloud-us'].url).toBe('https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/release/rule/Loon/iCloud/iCloud.list');
+    expect(providers['icloud-us'].format).toBe('text');
+    expect(providers['icloud-us'].behavior).toBe('classical');
   });
 });
