@@ -200,11 +200,11 @@ describe('GET /subconverter', () => {
         const res = await app.request(`http://localhost/subconverter?selectedRules=${encodeURIComponent(rules)}`);
         const text = await res.text();
 
-        const iCloudLine = text.indexOf('GEOSITE,icloud-us');
+        const icloudUsLine = text.indexOf('GEOSITE,icloud-us');
         const appleLine = text.indexOf('GEOSITE,apple');
-        expect(iCloudLine).toBeGreaterThan(-1);
+        expect(icloudUsLine).toBeGreaterThan(-1);
         expect(appleLine).toBeGreaterThan(-1);
-        expect(iCloudLine).toBeLessThan(appleLine);
+        expect(icloudUsLine).toBeLessThan(appleLine);
     });
 
     it('supports lang parameter for i18n', async () => {

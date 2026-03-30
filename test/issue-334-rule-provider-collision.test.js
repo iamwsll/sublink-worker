@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import yaml from 'js-yaml';
 import { ClashConfigBuilder } from '../src/builders/ClashConfigBuilder.js';
+import { ICLOUD_US_RULE_SET_URL } from '../src/config/ruleUrls.js';
 
 const SS_INPUT = `
 ss://YWVzLTEyOC1nY206dGVzdA@example.com:443#HK-Node-1
@@ -70,11 +71,11 @@ describe('Issue #334: rule-provider key collision fix', () => {
     const yamlText = await builder.build();
     const config = yaml.load(yamlText);
 
-    const iCloudIdx = config.rules.findIndex(r => r.match(/^RULE-SET,icloud-us,/));
+    const icloudUsIdx = config.rules.findIndex(r => r.match(/^RULE-SET,icloud-us,/));
     const appleIdx = config.rules.findIndex(r => r.match(/^RULE-SET,apple,/));
-    expect(iCloudIdx).toBeGreaterThan(-1);
+    expect(icloudUsIdx).toBeGreaterThan(-1);
     expect(appleIdx).toBeGreaterThan(-1);
-    expect(iCloudIdx).toBeLessThan(appleIdx);
+    expect(icloudUsIdx).toBeLessThan(appleIdx);
   });
 
   it('icloud us provider should subscribe upstream URL directly', async () => {
@@ -84,7 +85,7 @@ describe('Issue #334: rule-provider key collision fix', () => {
     const providers = config['rule-providers'];
 
     expect(providers['icloud-us']).toBeDefined();
-    expect(providers['icloud-us'].url).toBe('https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/release/rule/Loon/iCloud/iCloud.list');
+    expect(providers['icloud-us'].url).toBe(ICLOUD_US_RULE_SET_URL);
     expect(providers['icloud-us'].format).toBe('text');
     expect(providers['icloud-us'].behavior).toBe('classical');
   });

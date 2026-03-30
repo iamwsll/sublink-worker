@@ -46,7 +46,6 @@ export function generateRules(selectedRules = [], customRules = []) {
 				site_rules: rule.site_rules,
 				ip_rules: rule.ip_rules,
 				domain_suffix: rule?.domain_suffix,
-				domain_keyword: rule?.domain_keyword,
 				ip_cidr: rule?.ip_cidr,
 				outbound: rule.name
 			});
