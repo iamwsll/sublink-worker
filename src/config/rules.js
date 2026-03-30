@@ -59,7 +59,15 @@ export const UNIFIED_RULES = [
 	{
 		name: 'icloud美区',
 		site_rules: ['icloud-us'],
-		ip_rules: []
+		ip_rules: [],
+		rule_set_overrides: {
+			'icloud-us': {
+				singbox_format: 'source',
+				clash_format: 'text',
+				clash_behavior: 'classical',
+				url: 'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/release/rule/Loon/iCloud/iCloud.list'
+			}
+		}
 	},
 	{
 		name: 'Apple',
@@ -148,6 +156,16 @@ export const CLASH_SITE_RULE_SETS = UNIFIED_RULES.reduce((acc, rule) => {
 export const CLASH_IP_RULE_SETS = UNIFIED_RULES.reduce((acc, rule) => {
 	rule.ip_rules.forEach(ip_rule => {
 		acc[ip_rule] = `${ip_rule}.mrs`;
+	});
+	return acc;
+}, {});
+
+export const RULE_SET_OVERRIDES = UNIFIED_RULES.reduce((acc, rule) => {
+	if (!rule.rule_set_overrides) {
+		return acc;
+	}
+	Object.entries(rule.rule_set_overrides).forEach(([ruleName, overrides]) => {
+		acc[ruleName] = overrides;
 	});
 	return acc;
 }, {});

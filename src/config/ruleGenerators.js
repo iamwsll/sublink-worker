@@ -3,8 +3,8 @@
  * Functions for generating rules and rule sets
  */
 
-import { UNIFIED_RULES, PREDEFINED_RULE_SETS, SITE_RULE_SETS, IP_RULE_SETS, CLASH_SITE_RULE_SETS, CLASH_IP_RULE_SETS } from './rules.js';
-import { SITE_RULE_SET_BASE_URL, IP_RULE_SET_BASE_URL, CLASH_SITE_RULE_SET_BASE_URL, CLASH_IP_RULE_SET_BASE_URL, ICLOUD_US_RULE_SET_URL } from './ruleUrls.js';
+import { UNIFIED_RULES, PREDEFINED_RULE_SETS, SITE_RULE_SETS, IP_RULE_SETS, CLASH_SITE_RULE_SETS, CLASH_IP_RULE_SETS, RULE_SET_OVERRIDES } from './rules.js';
+import { SITE_RULE_SET_BASE_URL, IP_RULE_SET_BASE_URL, CLASH_SITE_RULE_SET_BASE_URL, CLASH_IP_RULE_SET_BASE_URL } from './ruleUrls.js';
 
 function toStringArray(value) {
 	if (Array.isArray(value)) {
@@ -16,6 +16,10 @@ function toStringArray(value) {
 		return value.split(',').map(x => x.trim()).filter(Boolean);
 	}
 	return [];
+}
+
+function getRuleSetOverride(ruleName) {
+	return RULE_SET_OVERRIDES[ruleName] || null;
 }
 
 // Helper function to get outbounds based on selected rule names
@@ -94,19 +98,12 @@ export function generateRuleSets(selectedRules = [], customRules = []) {
 	});
 
 	const site_rule_sets = Array.from(siteRuleSets).map(rule => {
-		if (rule === 'icloud-us') {
-			return {
-				tag: rule,
-				type: 'remote',
-				format: 'source',
-				url: ICLOUD_US_RULE_SET_URL,
-			};
-		}
+		const override = getRuleSetOverride(rule);
 		return {
 			tag: rule,
 			type: 'remote',
-			format: 'binary',
-			url: `${SITE_RULE_SET_BASE_URL}${SITE_RULE_SETS[rule]}`,
+			format: override?.singbox_format || 'binary',
+			url: override?.url || `${SITE_RULE_SET_BASE_URL}${SITE_RULE_SETS[rule]}`,
 		};
 	});
 
@@ -182,23 +179,15 @@ export function generateClashRuleSets(selectedRules = [], customRules = [], useM
 	const ip_rule_providers = {};
 
 	Array.from(siteRuleSets).forEach(rule => {
-		if (rule === 'icloud-us') {
-			site_rule_providers[rule] = {
-				type: 'http',
-				format: 'text',
-				behavior: 'classical',
-				url: ICLOUD_US_RULE_SET_URL,
-				path: './ruleset/icloud-us.list',
-				interval: 86400
-			};
-			return;
-		}
+		const override = getRuleSetOverride(rule);
+		const ruleFormat = override?.clash_format || format;
+		const ruleExt = ruleFormat === 'text' ? '.list' : ext;
 		site_rule_providers[rule] = {
 			type: 'http',
-			format: format,
-			behavior: 'domain',
-			url: `${CLASH_SITE_RULE_SET_BASE_URL}${rule}${ext}`,
-			path: `./ruleset/${rule}${ext}`,
+			format: ruleFormat,
+			behavior: override?.clash_behavior || 'domain',
+			url: override?.url || `${CLASH_SITE_RULE_SET_BASE_URL}${rule}${ext}`,
+			path: `./ruleset/${rule}${ruleExt}`,
 			interval: 86400
 		};
 	});
