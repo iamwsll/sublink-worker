@@ -7,6 +7,11 @@ export const CUSTOM_RULES = [];
 
 export const UNIFIED_RULES = [
 	{
+		name: 'icloud美区',
+		site_rules: ['icloud-us'],
+		ip_rules: []
+	},
+	{
 		name: 'Ad Block',
 		site_rules: ['category-ads-all'],
 		ip_rules: []
@@ -102,7 +107,7 @@ export const UNIFIED_RULES = [
 export const DIRECT_DEFAULT_RULES = new Set(['Private', 'Location:CN']);
 
 export const PREDEFINED_RULE_SETS = {
-	default: ['Ad Block', 'AI Services', 'Bilibili', 'Youtube', 'Google', 'Private', 'Location:CN', 'Telegram', 'Github', 'Microsoft', 'Apple', 'Gaming', 'Non-China'],
+	default: ['icloud美区', 'Ad Block', 'AI Services', 'Bilibili', 'Youtube', 'Google', 'Private', 'Location:CN', 'Telegram', 'Github', 'Microsoft', 'Apple', 'Gaming', 'Non-China'],
 	minimal: ['Location:CN', 'Private', 'Non-China'],
 	balanced: ['Location:CN', 'Private', 'Non-China', 'Github', 'Google', 'Youtube', 'AI Services', 'Telegram'],
 	comprehensive: UNIFIED_RULES.map(rule => rule.name)
