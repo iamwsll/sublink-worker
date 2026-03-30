@@ -7,6 +7,56 @@ export const CUSTOM_RULES = [];
 
 export const UNIFIED_RULES = [
 	{
+		name: 'Ad Block',
+		site_rules: ['category-ads-all'],
+		ip_rules: []
+	},
+	{
+		name: 'AI Services',
+		site_rules: ['category-ai-!cn',],
+		ip_rules: []
+	},
+	{
+		name: 'Bilibili',
+		site_rules: ['bilibili'],
+		ip_rules: []
+	},
+	{
+		name: 'Youtube',
+		site_rules: ['youtube'],
+		ip_rules: []
+	},
+	{
+		name: 'Google',
+		site_rules: ['google'],
+		ip_rules: ['google']
+	},
+	{
+		name: 'Private',
+		site_rules: [],
+		ip_rules: ['private']
+	},
+	{
+		name: 'Location:CN',
+		site_rules: ['geolocation-cn', 'cn'],
+		ip_rules: ['cn']
+	},
+	{
+		name: 'Telegram',
+		site_rules: [],
+		ip_rules: ['telegram']
+	},
+	{
+		name: 'Github',
+		site_rules: ['github', 'gitlab'],
+		ip_rules: []
+	},
+	{
+		name: 'Microsoft',
+		site_rules: ['microsoft'],
+		ip_rules: []
+	},
+	{
 		name: 'icloud美区',
 		site_rules: [],
 		ip_rules: [],
@@ -72,56 +122,6 @@ export const UNIFIED_RULES = [
 		]
 	},
 	{
-		name: 'Ad Block',
-		site_rules: ['category-ads-all'],
-		ip_rules: []
-	},
-	{
-		name: 'AI Services',
-		site_rules: ['category-ai-!cn',],
-		ip_rules: []
-	},
-	{
-		name: 'Bilibili',
-		site_rules: ['bilibili'],
-		ip_rules: []
-	},
-	{
-		name: 'Youtube',
-		site_rules: ['youtube'],
-		ip_rules: []
-	},
-	{
-		name: 'Google',
-		site_rules: ['google'],
-		ip_rules: ['google']
-	},
-	{
-		name: 'Private',
-		site_rules: [],
-		ip_rules: ['private']
-	},
-	{
-		name: 'Location:CN',
-		site_rules: ['geolocation-cn', 'cn'],
-		ip_rules: ['cn']
-	},
-	{
-		name: 'Telegram',
-		site_rules: [],
-		ip_rules: ['telegram']
-	},
-	{
-		name: 'Github',
-		site_rules: ['github', 'gitlab'],
-		ip_rules: []
-	},
-	{
-		name: 'Microsoft',
-		site_rules: ['microsoft'],
-		ip_rules: []
-	},
-	{
 		name: 'Apple',
 		site_rules: ['apple'],
 		ip_rules: []
@@ -167,7 +167,7 @@ export const UNIFIED_RULES = [
 export const DIRECT_DEFAULT_RULES = new Set(['Private', 'Location:CN']);
 
 export const PREDEFINED_RULE_SETS = {
-	default: ['icloud美区', 'Ad Block', 'AI Services', 'Bilibili', 'Youtube', 'Google', 'Private', 'Location:CN', 'Telegram', 'Github', 'Microsoft', 'Apple', 'Gaming', 'Non-China'],
+	default: ['Ad Block', 'AI Services', 'Bilibili', 'Youtube', 'Google', 'Private', 'Location:CN', 'Telegram', 'Github', 'Microsoft', 'icloud美区', 'Apple', 'Gaming', 'Non-China'],
 	minimal: ['Location:CN', 'Private', 'Non-China'],
 	balanced: ['Location:CN', 'Private', 'Non-China', 'Github', 'Google', 'Youtube', 'AI Services', 'Telegram'],
 	comprehensive: UNIFIED_RULES.map(rule => rule.name)
