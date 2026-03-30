@@ -4,7 +4,7 @@
  */
 
 import { UNIFIED_RULES, PREDEFINED_RULE_SETS, SITE_RULE_SETS, IP_RULE_SETS, CLASH_SITE_RULE_SETS, CLASH_IP_RULE_SETS } from './rules.js';
-import { SITE_RULE_SET_BASE_URL, IP_RULE_SET_BASE_URL, CLASH_SITE_RULE_SET_BASE_URL, CLASH_IP_RULE_SET_BASE_URL, ICLOUD_US_RULE_SET_URL } from './ruleUrls.js';
+import { SITE_RULE_SET_BASE_URL, IP_RULE_SET_BASE_URL, CLASH_SITE_RULE_SET_BASE_URL, CLASH_IP_RULE_SET_BASE_URL } from './ruleUrls.js';
 
 function toStringArray(value) {
 	if (Array.isArray(value)) {
@@ -46,6 +46,7 @@ export function generateRules(selectedRules = [], customRules = []) {
 				site_rules: rule.site_rules,
 				ip_rules: rule.ip_rules,
 				domain_suffix: rule?.domain_suffix,
+				domain_keyword: rule?.domain_keyword,
 				ip_cidr: rule?.ip_cidr,
 				outbound: rule.name
 			});
@@ -92,22 +93,12 @@ export function generateRuleSets(selectedRules = [], customRules = []) {
 		}
 	});
 
-	const site_rule_sets = Array.from(siteRuleSets).map(rule => {
-		if (rule === 'icloud-us') {
-			return {
-				tag: rule,
-				type: 'remote',
-				format: 'source',
-				url: ICLOUD_US_RULE_SET_URL,
-			};
-		}
-		return {
-			tag: rule,
-			type: 'remote',
-			format: 'binary',
-			url: `${SITE_RULE_SET_BASE_URL}${SITE_RULE_SETS[rule]}`,
-		};
-	});
+	const site_rule_sets = Array.from(siteRuleSets).map(rule => ({
+		tag: rule,
+		type: 'remote',
+		format: 'binary',
+		url: `${SITE_RULE_SET_BASE_URL}${SITE_RULE_SETS[rule]}`,
+	}));
 
 	const ip_rule_sets = Array.from(ipRuleSets).map(rule => ({
 		tag: `${rule}-ip`,
@@ -181,17 +172,6 @@ export function generateClashRuleSets(selectedRules = [], customRules = [], useM
 	const ip_rule_providers = {};
 
 	Array.from(siteRuleSets).forEach(rule => {
-		if (rule === 'icloud-us') {
-			site_rule_providers[rule] = {
-				type: 'http',
-				format: 'text',
-				behavior: 'classical',
-				url: ICLOUD_US_RULE_SET_URL,
-				path: './ruleset/icloud-us.list',
-				interval: 86400
-			};
-			return;
-		}
 		site_rule_providers[rule] = {
 			type: 'http',
 			format: format,
