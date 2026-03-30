@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import yaml from 'js-yaml';
 import { ClashConfigBuilder } from '../src/builders/ClashConfigBuilder.js';
+import { generateRuleSets, generateClashRuleSets } from '../src/config/ruleGenerators.js';
 
 const SS_INPUT = `
 ss://YWVzLTEyOC1nY206dGVzdA@example.com:443#HK-Node-1
@@ -87,5 +88,26 @@ describe('Issue #334: rule-provider key collision fix', () => {
     expect(providers['icloud-us'].url).toBe('https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/release/rule/Loon/iCloud/iCloud.list');
     expect(providers['icloud-us'].format).toBe('text');
     expect(providers['icloud-us'].behavior).toBe('classical');
+  });
+
+  it('icloud us override should be reusable in sing-box and clash generators', () => {
+    const { site_rule_sets } = generateRuleSets(['icloud美区']);
+    const iCloudRuleSet = site_rule_sets.find(rule => rule.tag === 'icloud-us');
+    expect(iCloudRuleSet).toBeDefined();
+    expect(iCloudRuleSet.format).toBe('source');
+    expect(iCloudRuleSet.url).toBe('https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/release/rule/Loon/iCloud/iCloud.list');
+
+    const { site_rule_providers } = generateClashRuleSets(['icloud美区'], [], true);
+    expect(site_rule_providers['icloud-us']).toBeDefined();
+    expect(site_rule_providers['icloud-us'].format).toBe('text');
+    expect(site_rule_providers['icloud-us'].behavior).toBe('classical');
+    expect(site_rule_providers['icloud-us'].path).toBe('./ruleset/icloud-us.list');
+  });
+
+  it('non-overridden clash rules should keep mrs format behavior', () => {
+    const { site_rule_providers } = generateClashRuleSets(['AI Services'], [], true);
+    expect(site_rule_providers['category-ai-!cn']).toBeDefined();
+    expect(site_rule_providers['category-ai-!cn'].format).toBe('mrs');
+    expect(site_rule_providers['category-ai-!cn'].behavior).toBe('domain');
   });
 });
