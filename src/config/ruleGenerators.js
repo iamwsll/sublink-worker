@@ -181,7 +181,7 @@ export function generateClashRuleSets(selectedRules = [], customRules = [], useM
 	Array.from(siteRuleSets).forEach(rule => {
 		const override = getRuleSetOverride(rule);
 		const ruleFormat = override?.clash_format || format;
-		const ruleExt = ruleFormat === 'text' ? '.list' : ext;
+		const ruleExt = ruleFormat === 'text' ? '.list' : (ext || '.mrs');
 		site_rule_providers[rule] = {
 			type: 'http',
 			format: ruleFormat,
