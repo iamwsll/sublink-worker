@@ -194,6 +194,19 @@ describe('GET /subconverter', () => {
         expect(geositeLine).toBeLessThan(geoipLine);
     });
 
+    it('orders icloud us rule before apple rule for higher priority', async () => {
+        const app = createTestApp();
+        const rules = JSON.stringify(['icloud美区', 'Apple']);
+        const res = await app.request(`http://localhost/subconverter?selectedRules=${encodeURIComponent(rules)}`);
+        const text = await res.text();
+
+        const iCloudLine = text.indexOf('DOMAIN-KEYWORD,icloud.com.akadns.net');
+        const appleLine = text.indexOf('GEOSITE,apple');
+        expect(iCloudLine).toBeGreaterThan(-1);
+        expect(appleLine).toBeGreaterThan(-1);
+        expect(iCloudLine).toBeLessThan(appleLine);
+    });
+
     it('supports lang parameter for i18n', async () => {
         const app = createTestApp();
         const res = await app.request('http://localhost/subconverter?selectedRules=minimal&lang=en');

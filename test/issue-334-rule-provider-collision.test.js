@@ -64,4 +64,16 @@ describe('Issue #334: rule-provider key collision fix', () => {
     expect(nonChinaIdx).toBeGreaterThan(-1);
     expect(googleIdx).toBeLessThan(nonChinaIdx);
   });
+
+  it('icloud us rule should be before apple rule to ensure higher priority', async () => {
+    const builder = new ClashConfigBuilder(SS_INPUT, 'default', [], null, 'zh-CN', 'mihomo/1.0');
+    const yamlText = await builder.build();
+    const config = yaml.load(yamlText);
+
+    const iCloudIdx = config.rules.findIndex(r => r.match(/^DOMAIN-KEYWORD,icloud\.com\.akadns\.net,/));
+    const appleIdx = config.rules.findIndex(r => r.match(/^RULE-SET,apple,/));
+    expect(iCloudIdx).toBeGreaterThan(-1);
+    expect(appleIdx).toBeGreaterThan(-1);
+    expect(iCloudIdx).toBeLessThan(appleIdx);
+  });
 });
