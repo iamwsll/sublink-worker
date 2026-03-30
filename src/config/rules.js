@@ -165,6 +165,9 @@ export const RULE_SET_OVERRIDES = UNIFIED_RULES.reduce((acc, rule) => {
 		return acc;
 	}
 	Object.entries(rule.rule_set_overrides).forEach(([ruleName, overrides]) => {
+		if (acc[ruleName]) {
+			throw new Error(`Duplicate rule_set_overrides found for "${ruleName}"`);
+		}
 		acc[ruleName] = overrides;
 	});
 	return acc;

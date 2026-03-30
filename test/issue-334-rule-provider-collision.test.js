@@ -90,7 +90,7 @@ describe('Issue #334: rule-provider key collision fix', () => {
     expect(providers['icloud-us'].behavior).toBe('classical');
   });
 
-  it('icloud us override should be reusable in sing-box and clash generators', () => {
+  it('iCloud US override should be reusable in Sing-box and Clash generators', () => {
     const { site_rule_sets } = generateRuleSets(['icloud美区']);
     const iCloudRuleSet = site_rule_sets.find(rule => rule.tag === 'icloud-us');
     expect(iCloudRuleSet).toBeDefined();
@@ -104,7 +104,7 @@ describe('Issue #334: rule-provider key collision fix', () => {
     expect(site_rule_providers['icloud-us'].path).toBe('./ruleset/icloud-us.list');
   });
 
-  it('non-overridden clash rules should keep mrs format behavior', () => {
+  it('non-overridden clash rules should keep MRS format behavior', () => {
     const { site_rule_providers } = generateClashRuleSets(['AI Services'], [], true);
     expect(site_rule_providers['category-ai-!cn']).toBeDefined();
     expect(site_rule_providers['category-ai-!cn'].format).toBe('mrs');
