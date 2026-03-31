@@ -428,6 +428,44 @@ export class ClashConfigBuilder extends BaseConfigBuilder {
         }
     }
 
+    ensureRuleOutboundGroups(rules, proxyList) {
+        if (!Array.isArray(rules) || rules.length === 0) return;
+        const outbounds = [...new Set(
+            rules
+                .map(rule => rule?.outbound)
+                .filter(outbound => typeof outbound === 'string' && outbound.trim())
+        )];
+        if (outbounds.length === 0) return;
+        this.addOutboundGroups(outbounds, proxyList);
+    }
+
+    ensureRuleTargetsHaveGroups(ruleResults, proxyList) {
+        if (!Array.isArray(ruleResults) || ruleResults.length === 0) return;
+        const requiredGroups = new Set();
+        ruleResults.forEach((ruleLine) => {
+            if (typeof ruleLine !== 'string') return;
+            const parts = ruleLine.split(',');
+            if (parts.length < 3) return;
+            const target = normalizeGroupName(parts[2]);
+            if (!target || target === 'DIRECT' || target === 'REJECT') return;
+            requiredGroups.add(target);
+        });
+
+        requiredGroups.forEach((groupName) => {
+            if (this.hasProxyGroup(groupName)) return;
+            const group = {
+                type: 'select',
+                name: groupName,
+                proxies: this.buildSelectGroupMembers(proxyList)
+            };
+            const providerNames = this.getAllProviderNames();
+            if (providerNames.length > 0) {
+                group.use = providerNames;
+            }
+            this.config['proxy-groups'].push(group);
+        });
+    }
+
     addFallBackGroup(proxyList) {
         const name = this.t('outboundNames.Fall Back');
         if (this.hasProxyGroup(name)) return;
@@ -626,6 +664,7 @@ export class ClashConfigBuilder extends BaseConfigBuilder {
 
     formatConfig() {
         const rules = this.generateRules();
+        this.ensureRuleOutboundGroups(rules, this.getProxyList());
         const useMrs = supportsMrsFormat(this.userAgent);
         const { site_rule_providers, ip_rule_providers } = generateClashRuleSets(this.selectedRules, this.customRules, useMrs, this.customRuleGroups);
         this.config['rule-providers'] = {
@@ -633,6 +672,7 @@ export class ClashConfigBuilder extends BaseConfigBuilder {
             ...ip_rule_providers
         };
         const ruleResults = emitClashRules(rules, this.t);
+        this.ensureRuleTargetsHaveGroups(ruleResults, this.getProxyList());
 
         // Add proxy-providers if we have any
         if (this.providerUrls.length > 0) {

@@ -237,7 +237,7 @@ export const Form = (props) => {
             {t('addRuleSetUrl')}
           </button>
         </div>
-        <div x-show="customGroup.name && selectedRules.includes(customGroup.name)" class="mt-3">
+        <div x-show="customGroup.name" class="mt-3">
           <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">{t('policyDefaultOption')}</label>
           <select
             x-model="groupDefaults[customGroup.name]"
