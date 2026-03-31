@@ -224,6 +224,26 @@ describe('GET /subconverter', () => {
         expect(locationCnLine).toBeLessThan(finalLine);
     });
 
+    it('orders privacy, AdBlock, app purification before Ad Block', async () => {
+        const app = createTestApp();
+        const rules = JSON.stringify(['隐私防护', 'AdBlock', '应用净化', 'Ad Block']);
+        const res = await app.request(`http://localhost/subconverter?selectedRules=${encodeURIComponent(rules)}`);
+        const text = await res.text();
+
+        const privacyLine = text.indexOf('BanEasyPrivacy.list');
+        const adBlockLine = text.indexOf('BanEasyList.list');
+        const appPurificationLine = text.indexOf('BanProgramAD.list');
+        const adBlockLegacyLine = text.indexOf('BanAD.list');
+
+        expect(privacyLine).toBeGreaterThan(-1);
+        expect(adBlockLine).toBeGreaterThan(-1);
+        expect(appPurificationLine).toBeGreaterThan(-1);
+        expect(adBlockLegacyLine).toBeGreaterThan(-1);
+        expect(privacyLine).toBeLessThan(adBlockLegacyLine);
+        expect(adBlockLine).toBeLessThan(adBlockLegacyLine);
+        expect(appPurificationLine).toBeLessThan(adBlockLegacyLine);
+    });
+
     it('supports customRuleGroups for custom ruleset urls', async () => {
         const app = createTestApp();
         const selectedRules = JSON.stringify(['自定义策略']);
