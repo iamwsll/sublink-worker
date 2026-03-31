@@ -207,6 +207,23 @@ describe('GET /subconverter', () => {
         expect(iCloudLine).toBeLessThan(appleLine);
     });
 
+    it('orders Non-China before Location:CN and both before FINAL', async () => {
+        const app = createTestApp();
+        const rules = JSON.stringify(['Non-China', 'Location:CN']);
+        const res = await app.request(`http://localhost/subconverter?selectedRules=${encodeURIComponent(rules)}`);
+        const text = await res.text();
+
+        const nonChinaLine = text.indexOf('GEOSITE,geolocation-!cn');
+        const locationCnLine = text.indexOf('GEOSITE,geolocation-cn');
+        const finalLine = text.indexOf('[]FINAL');
+
+        expect(nonChinaLine).toBeGreaterThan(-1);
+        expect(locationCnLine).toBeGreaterThan(-1);
+        expect(finalLine).toBeGreaterThan(-1);
+        expect(nonChinaLine).toBeLessThan(locationCnLine);
+        expect(locationCnLine).toBeLessThan(finalLine);
+    });
+
     it('supports customRuleGroups for custom ruleset urls', async () => {
         const app = createTestApp();
         const selectedRules = JSON.stringify(['自定义策略']);
