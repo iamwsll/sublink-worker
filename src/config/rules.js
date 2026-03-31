@@ -178,7 +178,7 @@ export const UNIFIED_RULES = [
 export const DIRECT_DEFAULT_RULES = new Set(['Private', 'Location:CN']);
 
 export const PREDEFINED_RULE_SETS = {
-	default: ['Ad Block', 'AI Services', 'Bilibili', 'Youtube', 'Google', 'Private', 'Location:CN', 'Telegram', 'Github', 'Microsoft', 'icloud美区', 'Apple', '隐私防护', 'AdBlock', '应用净化', 'Gaming', 'Non-China'],
+	default: ['隐私防护', 'AdBlock', '应用净化', 'Ad Block', 'AI Services', 'Bilibili', 'Youtube', 'Google', 'Private', 'Location:CN', 'Telegram', 'Github', 'Microsoft', 'icloud美区', 'Apple', 'Gaming', 'Non-China'],
 	minimal: ['Location:CN', 'Private', 'Non-China'],
 	balanced: ['Location:CN', 'Private', 'Non-China', 'Github', 'Google', 'Youtube', 'AI Services', 'Telegram'],
 	comprehensive: UNIFIED_RULES.map(rule => rule.name)
