@@ -187,6 +187,19 @@ export const formLogicFn = (t) => {
                 this.configEditor = localStorage.getItem('configEditor') || '';
                 this.configType = localStorage.getItem('configType') || 'singbox';
                 this.customShortCode = localStorage.getItem('customShortCode') || '';
+                const savedSelectedPredefinedRule = localStorage.getItem('selectedPredefinedRule');
+                if (savedSelectedPredefinedRule) {
+                    this.selectedPredefinedRule = savedSelectedPredefinedRule;
+                }
+                const savedSelectedRules = localStorage.getItem('selectedRules');
+                if (savedSelectedRules) {
+                    try {
+                        const parsedSelectedRules = JSON.parse(savedSelectedRules);
+                        if (Array.isArray(parsedSelectedRules)) {
+                            this.selectedRules = parsedSelectedRules;
+                        }
+                    } catch { }
+                }
                 const initialUrlParams = new URLSearchParams(window.location.search);
                 this.currentConfigId = initialUrlParams.get('configId') || '';
 
@@ -234,6 +247,8 @@ export const formLogicFn = (t) => {
                     this.resetConfigValidation();
                 });
                 this.$watch('customShortCode', val => localStorage.setItem('customShortCode', val));
+                this.$watch('selectedPredefinedRule', val => localStorage.setItem('selectedPredefinedRule', val));
+                this.$watch('selectedRules', val => localStorage.setItem('selectedRules', JSON.stringify(val || [])), { deep: true });
                 this.$watch('accordionSections', val => localStorage.setItem('accordionSections', JSON.stringify(val)), { deep: true });
             },
 
