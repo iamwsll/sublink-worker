@@ -116,4 +116,22 @@ ss://YWVzLTEyOC1nY206dGVzdA@example.com:444#US-Node-1
     expect(fallbackGroup).toBeDefined();
     expect(fallbackGroup.proxies[0]).not.toBe('DIRECT');
   });
+
+  it('should keep every RULE-SET target resolvable to an existing proxy group', async () => {
+    const input = `
+ss://YWVzLTEyOC1nY206dGVzdA@example.com:443#HK-Node-1
+    `;
+    const builder = new ClashConfigBuilder(input, 'default', [], null, 'zh-CN', 'test-agent');
+    const yamlText = await builder.build();
+    const built = yaml.load(yamlText);
+
+    const groupNames = new Set((built['proxy-groups'] || []).map(group => group?.name).filter(Boolean));
+    const specialTargets = new Set(['DIRECT', 'REJECT']);
+    (built.rules || [])
+      .filter(rule => typeof rule === 'string' && (rule.startsWith('RULE-SET,') || rule.startsWith('DOMAIN-') || rule.startsWith('IP-CIDR,') || rule.startsWith('SRC-IP-CIDR,')))
+      .forEach((rule) => {
+        const target = rule.split(',')[2];
+        expect(groupNames.has(target) || specialTargets.has(target)).toBe(true);
+      });
+  });
 });
