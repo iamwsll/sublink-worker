@@ -86,4 +86,33 @@ describe('formLogic toString fix', () => {
       Apple: 'DIRECT'
     });
   });
+
+  it('shows effective built-in default policy labels for rule groups', () => {
+    const fakeWindow = {
+      APP_TRANSLATIONS: {
+        followBuiltInDefault: '跟随内置默认',
+        outboundNames: {
+          'Node Select': '🚀 节点选择',
+          DIRECT: 'DIRECT',
+          REJECT: 'REJECT'
+        }
+      },
+      PREDEFINED_RULE_SETS: {},
+      PREDEFINED_RULE_GROUP_DEFAULTS: {
+        default: {
+          Bilibili: 'DIRECT'
+        }
+      }
+    };
+    const fn = new Function('window', '(' + formLogicFn.toString() + ')(); return window;');
+    const result = fn(fakeWindow);
+    const data = result.formData();
+
+    data.selectedPredefinedRule = 'default';
+    expect(data.getFollowBuiltInDefaultLabel('Bilibili')).toBe('跟随内置默认 (DIRECT)');
+    expect(data.getFollowBuiltInDefaultLabel('Google')).toBe('跟随内置默认 (🚀 节点选择)');
+    expect(data.getFollowBuiltInDefaultLabel('Ad Block')).toBe('跟随内置默认 (REJECT)');
+    expect(data.getFollowBuiltInDefaultLabel('Location:CN')).toBe('跟随内置默认 (DIRECT)');
+    expect(data.getFollowBuiltInDefaultLabel('My Custom Group', true)).toBe('跟随内置默认 (🚀 节点选择)');
+  });
 });
