@@ -115,4 +115,40 @@ describe('formLogic toString fix', () => {
     expect(data.getFollowBuiltInDefaultLabel('Location:CN')).toBe('跟随内置默认 (DIRECT)');
     expect(data.getFollowBuiltInDefaultLabel('My Custom Group', true)).toBe('跟随内置默认 (🚀 节点选择)');
   });
+
+  it('restores custom selected rules from localStorage during init', () => {
+    const fakeWindow = {
+      APP_TRANSLATIONS: {},
+      PREDEFINED_RULE_SETS: {
+        default: ['Ad Block', 'Google']
+      },
+      location: { search: '' }
+    };
+    const fn = new Function('window', '(' + formLogicFn.toString() + ')(); return window;');
+    const result = fn(fakeWindow);
+    const data = result.formData();
+
+    const storage = new Map([
+      ['selectedPredefinedRule', 'custom'],
+      ['selectedRules', JSON.stringify(['隐私防护', 'AdBlock', '应用净化'])]
+    ]);
+    const originalLocalStorage = globalThis.localStorage;
+    globalThis.localStorage = {
+      getItem: (key) => storage.get(key) ?? null,
+      setItem: () => { }
+    };
+
+    const watched = [];
+    data.$watch = (name) => watched.push(name);
+
+    try {
+      data.init();
+      expect(data.selectedPredefinedRule).toBe('custom');
+      expect(data.selectedRules).toEqual(['隐私防护', 'AdBlock', '应用净化']);
+      expect(watched).toContain('selectedPredefinedRule');
+      expect(watched).toContain('selectedRules');
+    } finally {
+      globalThis.localStorage = originalLocalStorage;
+    }
+  });
 });
