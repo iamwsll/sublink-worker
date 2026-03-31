@@ -9,6 +9,51 @@ export const CUSTOM_RULES = [];
 
 export const UNIFIED_RULES = [
 	{
+		name: '隐私防护',
+		site_rules: ['privacy-protection'],
+		ip_rules: [],
+		rule_set_overrides: {
+			'privacy-protection': {
+				singbox_format: 'source',
+				clash_format: 'text',
+				clash_behavior: 'classical',
+				url: 'https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/BanEasyPrivacy.list'
+			}
+		}
+	},
+	{
+		name: 'AdBlock',
+		site_rules: ['adblock', 'adblock-china'],
+		ip_rules: [],
+		rule_set_overrides: {
+			adblock: {
+				singbox_format: 'source',
+				clash_format: 'text',
+				clash_behavior: 'classical',
+				url: 'https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/BanEasyList.list'
+			},
+			'adblock-china': {
+				singbox_format: 'source',
+				clash_format: 'text',
+				clash_behavior: 'classical',
+				url: 'https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/BanEasyListChina.list'
+			}
+		}
+	},
+	{
+		name: '应用净化',
+		site_rules: ['app-purification'],
+		ip_rules: [],
+		rule_set_overrides: {
+			'app-purification': {
+				singbox_format: 'source',
+				clash_format: 'text',
+				clash_behavior: 'classical',
+				url: 'https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/BanProgramAD.list'
+			}
+		}
+	},
+	{
 		name: 'Ad Block',
 		site_rules: ['ad-block'],
 		ip_rules: [],
@@ -84,51 +129,6 @@ export const UNIFIED_RULES = [
 				clash_format: 'text',
 				clash_behavior: 'classical',
 				url: 'https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Apple.list'
-			}
-		}
-	},
-	{
-		name: '隐私防护',
-		site_rules: ['privacy-protection'],
-		ip_rules: [],
-		rule_set_overrides: {
-			'privacy-protection': {
-				singbox_format: 'source',
-				clash_format: 'text',
-				clash_behavior: 'classical',
-				url: 'https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/BanEasyPrivacy.list'
-			}
-		}
-	},
-	{
-		name: 'AdBlock',
-		site_rules: ['adblock', 'adblock-china'],
-		ip_rules: [],
-		rule_set_overrides: {
-			adblock: {
-				singbox_format: 'source',
-				clash_format: 'text',
-				clash_behavior: 'classical',
-				url: 'https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/BanEasyList.list'
-			},
-			'adblock-china': {
-				singbox_format: 'source',
-				clash_format: 'text',
-				clash_behavior: 'classical',
-				url: 'https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/BanEasyListChina.list'
-			}
-		}
-	},
-	{
-		name: '应用净化',
-		site_rules: ['app-purification'],
-		ip_rules: [],
-		rule_set_overrides: {
-			'app-purification': {
-				singbox_format: 'source',
-				clash_format: 'text',
-				clash_behavior: 'classical',
-				url: 'https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/BanProgramAD.list'
 			}
 		}
 	},
