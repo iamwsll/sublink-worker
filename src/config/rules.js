@@ -3,6 +3,8 @@
  * Contains unified rule structure and predefined rule sets
  */
 
+import { normalizeCustomRuleGroups } from '../utils/customRuleGroups.js';
+
 export const CUSTOM_RULES = [];
 
 export const UNIFIED_RULES = [
@@ -237,7 +239,7 @@ export const RULE_SET_OVERRIDES = UNIFIED_RULES.reduce((acc, rule) => {
 	return acc;
 }, {});
 
-function sanitizeRuleTagPart(value = '') {
+function generateRuleTagSlug(value = '') {
 	return String(value)
 		.toLowerCase()
 		.replace(/[^a-z0-9]+/g, '-')
@@ -245,25 +247,10 @@ function sanitizeRuleTagPart(value = '') {
 		.slice(0, 40) || 'custom';
 }
 
-function normalizeCustomRuleGroup(raw, index) {
-	if (!raw || typeof raw !== 'object') return null;
-	const name = typeof raw.name === 'string' ? raw.name.trim() : '';
-	if (!name) return null;
-	const urls = Array.isArray(raw.urls)
-		? raw.urls
-		: (typeof raw.url === 'string' ? [raw.url] : []);
-	const normalizedUrls = urls
-		.filter(url => typeof url === 'string')
-		.map(url => url.trim())
-		.filter(Boolean);
-	if (normalizedUrls.length === 0) return null;
-	return { name, urls: normalizedUrls, index };
-}
-
 function buildRuleFromCustomGroup(group) {
 	const overrides = {};
 	const siteRules = group.urls.map((url, idx) => {
-		const tag = `custom-${sanitizeRuleTagPart(group.name)}-${group.index}-${idx + 1}`;
+		const tag = `custom-${generateRuleTagSlug(group.name)}-${group.index + 1}-${idx + 1}`;
 		overrides[tag] = {
 			singbox_format: 'source',
 			clash_format: 'text',
@@ -281,9 +268,7 @@ function buildRuleFromCustomGroup(group) {
 }
 
 export function buildRuleContext(customRuleGroups = []) {
-	const normalizedGroups = (Array.isArray(customRuleGroups) ? customRuleGroups : [])
-		.map((group, idx) => normalizeCustomRuleGroup(group, idx))
-		.filter(Boolean);
+	const normalizedGroups = normalizeCustomRuleGroups(customRuleGroups);
 	if (normalizedGroups.length === 0) {
 		return {
 			rules: UNIFIED_RULES,

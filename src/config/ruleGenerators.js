@@ -6,6 +6,10 @@
 import { PREDEFINED_RULE_SETS, buildRuleContext } from './rules.js';
 import { SITE_RULE_SET_BASE_URL, IP_RULE_SET_BASE_URL, CLASH_SITE_RULE_SET_BASE_URL, CLASH_IP_RULE_SET_BASE_URL } from './ruleUrls.js';
 
+const GEOSITE_FILE_PREFIX = 'geosite-';
+const GEOIP_FILE_PREFIX = 'geoip-';
+const SRS_FILE_EXT = '.srs';
+
 function toStringArray(value) {
 	if (Array.isArray(value)) {
 		return value
@@ -106,7 +110,7 @@ export function generateRuleSets(selectedRules = [], customRules = [], customRul
 			tag: rule,
 			type: 'remote',
 			format: override?.singbox_format || 'binary',
-			url: override?.url || `${SITE_RULE_SET_BASE_URL}geosite-${rule}.srs`,
+			url: override?.url || `${SITE_RULE_SET_BASE_URL}${GEOSITE_FILE_PREFIX}${rule}${SRS_FILE_EXT}`,
 		};
 	});
 
@@ -116,7 +120,7 @@ export function generateRuleSets(selectedRules = [], customRules = [], customRul
 			tag: `${rule}-ip`,
 			type: 'remote',
 			format: override?.singbox_format || 'binary',
-			url: override?.url || `${IP_RULE_SET_BASE_URL}geoip-${rule}.srs`,
+			url: override?.url || `${IP_RULE_SET_BASE_URL}${GEOIP_FILE_PREFIX}${rule}${SRS_FILE_EXT}`,
 		};
 	});
 
@@ -201,12 +205,13 @@ export function generateClashRuleSets(selectedRules = [], customRules = [], useM
 
 	Array.from(ipRuleSets).forEach(rule => {
 		const override = getRuleSetOverride(ruleSetOverrides, `${rule}-ip`);
+		const providerPathExt = override?.clash_format === 'text' ? '.list' : ext;
 		ip_rule_providers[`${rule}-ip`] = {
 			type: 'http',
 			format: override?.clash_format || format,
 			behavior: override?.clash_behavior || 'ipcidr',
 			url: override?.url || `${CLASH_IP_RULE_SET_BASE_URL}${rule}${ext}`,
-			path: `./ruleset/${rule}-ip${override?.clash_format === 'text' ? '.list' : ext}`,
+			path: `./ruleset/${rule}-ip${providerPathExt}`,
 			interval: 86400
 		};
 	});

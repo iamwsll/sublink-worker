@@ -17,6 +17,7 @@ import { ConfigStorageService } from '../services/configStorageService.js';
 import { ServiceError, MissingDependencyError } from '../services/errors.js';
 import { normalizeRuntime } from '../runtime/runtimeConfig.js';
 import { PREDEFINED_RULE_SETS, SING_BOX_CONFIG, SING_BOX_CONFIG_V1_11, generateSubconverterConfig } from '../config/index.js';
+import { normalizeCustomRuleGroups } from '../utils/customRuleGroups.js';
 
 const DEFAULT_USER_AGENT = 'curl/7.74.0';
 
@@ -463,24 +464,8 @@ function parseGroupDefaults(raw) {
 function parseCustomRuleGroups(raw) {
     if (!raw) return [];
     try {
-        const parsed = JSON.parse(raw);
-        if (!Array.isArray(parsed)) return [];
-        return parsed
-            .map(item => {
-                if (!item || typeof item !== 'object') return null;
-                const name = typeof item.name === 'string' ? item.name.trim() : '';
-                if (!name) return null;
-                const urls = Array.isArray(item.urls)
-                    ? item.urls
-                    : (typeof item.url === 'string' ? [item.url] : []);
-                const normalizedUrls = urls
-                    .filter(url => typeof url === 'string')
-                    .map(url => url.trim())
-                    .filter(Boolean);
-                if (normalizedUrls.length === 0) return null;
-                return { name, urls: normalizedUrls };
-            })
-            .filter(Boolean);
+        return normalizeCustomRuleGroups(JSON.parse(raw))
+            .map(({ name, urls }) => ({ name, urls }));
     } catch {
         return [];
     }

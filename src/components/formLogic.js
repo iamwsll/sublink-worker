@@ -1,5 +1,28 @@
 export const formLogicFn = (t) => {
     const GROUP_DEFAULTS_SAVE_DEBOUNCE_MS = 120;
+    // Keep this helper inlined instead of importing from utils so formLogicFn.toString()
+    // remains self-contained when injected into the browser runtime.
+    const normalizeCustomRuleGroups = (rawGroups = []) => {
+        if (!Array.isArray(rawGroups)) return [];
+        return rawGroups
+            .map((group, idx) => {
+                if (!group || typeof group !== 'object') return null;
+                const name = typeof group.name === 'string' ? group.name.trim() : '';
+                if (!name) return null;
+                // Backward compatibility: older links used singular `url`, new format uses `urls`.
+                const urls = Array.isArray(group.urls)
+                    ? group.urls
+                    : (typeof group.url === 'string' ? [group.url] : []);
+                const normalizedUrls = urls
+                    .filter(url => typeof url === 'string')
+                    .map(url => url.trim())
+                    .filter(Boolean);
+                if (normalizedUrls.length === 0) return null;
+                return { name, urls: normalizedUrls, index: idx };
+            })
+            .filter(Boolean)
+            .map(({ name, urls }) => ({ name, urls }));
+    };
     window.formData = function () {
         // Inline parseSurgeConfigInput to make it available in toString()
         const parseSurgeValue = (rawValue = '') => {
@@ -153,25 +176,10 @@ export const formLogicFn = (t) => {
                 const savedCustomRuleGroups = localStorage.getItem('customRuleGroups');
                 if (savedCustomRuleGroups) {
                     try {
-                        const parsedGroups = JSON.parse(savedCustomRuleGroups);
-                        if (Array.isArray(parsedGroups)) {
-                            this.customRuleGroups = parsedGroups
-                                .map(group => {
-                                    if (!group || typeof group !== 'object') return null;
-                                    const name = typeof group.name === 'string' ? group.name.trim() : '';
-                                    const urls = Array.isArray(group.urls)
-                                        ? group.urls
-                                        : (typeof group.url === 'string' ? [group.url] : []);
-                                    const normalizedUrls = urls
-                                        .filter(url => typeof url === 'string')
-                                        .map(url => url.trim())
-                                        .filter(Boolean);
-                                    if (!name || normalizedUrls.length === 0) return null;
-                                    return { name, urls: normalizedUrls };
-                                })
-                                .filter(Boolean);
-                        }
-                    } catch { }
+                        this.customRuleGroups = normalizeCustomRuleGroups(JSON.parse(savedCustomRuleGroups));
+                    } catch {
+                        // Ignore malformed local cache and continue with defaults.
+                    }
                 }
                 this.customUA = localStorage.getItem('userAgent') || '';
                 this.configEditor = localStorage.getItem('configEditor') || '';
@@ -262,22 +270,7 @@ export const formLogicFn = (t) => {
             },
 
             getCustomRuleGroupsForPayload() {
-                if (!Array.isArray(this.customRuleGroups)) return [];
-                return this.customRuleGroups
-                    .map(group => {
-                        if (!group || typeof group !== 'object') return null;
-                        const name = typeof group.name === 'string' ? group.name.trim() : '';
-                        const urls = Array.isArray(group.urls)
-                            ? group.urls
-                            : [];
-                        const normalizedUrls = urls
-                            .filter(url => typeof url === 'string')
-                            .map(url => url.trim())
-                            .filter(Boolean);
-                        if (!name || normalizedUrls.length === 0) return null;
-                        return { name, urls: normalizedUrls };
-                    })
-                    .filter(Boolean);
+                return normalizeCustomRuleGroups(this.customRuleGroups);
             },
 
             addCustomRuleGroup() {
@@ -758,24 +751,7 @@ export const formLogicFn = (t) => {
                 const customRuleGroups = params.get('customRuleGroups');
                 if (customRuleGroups) {
                     try {
-                        const parsed = JSON.parse(customRuleGroups);
-                        if (Array.isArray(parsed)) {
-                            this.customRuleGroups = parsed
-                                .map(group => {
-                                    if (!group || typeof group !== 'object') return null;
-                                    const name = typeof group.name === 'string' ? group.name.trim() : '';
-                                    const urls = Array.isArray(group.urls)
-                                        ? group.urls
-                                        : (typeof group.url === 'string' ? [group.url] : []);
-                                    const normalizedUrls = urls
-                                        .filter(url => typeof url === 'string')
-                                        .map(url => url.trim())
-                                        .filter(Boolean);
-                                    if (!name || normalizedUrls.length === 0) return null;
-                                    return { name, urls: normalizedUrls };
-                                })
-                                .filter(Boolean);
-                        }
+                        this.customRuleGroups = normalizeCustomRuleGroups(JSON.parse(customRuleGroups));
                     } catch (e) {
                         console.warn('Failed to parse customRuleGroups:', e);
                     }
