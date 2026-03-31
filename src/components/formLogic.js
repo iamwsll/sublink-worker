@@ -198,7 +198,9 @@ export const formLogicFn = (t) => {
                         if (Array.isArray(parsedSelectedRules)) {
                             this.selectedRules = parsedSelectedRules;
                         }
-                    } catch { }
+                    } catch {
+                        // Ignore malformed local cache and continue with defaults.
+                    }
                 }
                 const initialUrlParams = new URLSearchParams(window.location.search);
                 this.currentConfigId = initialUrlParams.get('configId') || '';
@@ -248,7 +250,11 @@ export const formLogicFn = (t) => {
                 });
                 this.$watch('customShortCode', val => localStorage.setItem('customShortCode', val));
                 this.$watch('selectedPredefinedRule', val => localStorage.setItem('selectedPredefinedRule', val));
-                this.$watch('selectedRules', val => localStorage.setItem('selectedRules', JSON.stringify(val || [])), { deep: true });
+                this.$watch('selectedRules', val => {
+                    if (Array.isArray(val)) {
+                        localStorage.setItem('selectedRules', JSON.stringify(val));
+                    }
+                }, { deep: true });
                 this.$watch('accordionSections', val => localStorage.setItem('accordionSections', JSON.stringify(val)), { deep: true });
             },
 

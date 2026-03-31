@@ -133,13 +133,18 @@ describe('formLogic toString fix', () => {
       ['selectedRules', JSON.stringify(['隐私防护', 'AdBlock', '应用净化'])]
     ]);
     const originalLocalStorage = globalThis.localStorage;
+    const setItemCalls = [];
     globalThis.localStorage = {
       getItem: (key) => storage.get(key) ?? null,
-      setItem: () => { }
+      setItem: (key, value) => setItemCalls.push([key, value])
     };
 
     const watched = [];
-    data.$watch = (name) => watched.push(name);
+    const watchHandlers = new Map();
+    data.$watch = (name, handler) => {
+      watched.push(name);
+      watchHandlers.set(name, handler);
+    };
 
     try {
       data.init();
@@ -147,6 +152,15 @@ describe('formLogic toString fix', () => {
       expect(data.selectedRules).toEqual(['隐私防护', 'AdBlock', '应用净化']);
       expect(watched).toContain('selectedPredefinedRule');
       expect(watched).toContain('selectedRules');
+      expect(setItemCalls).toEqual([]);
+
+      watchHandlers.get('selectedPredefinedRule')('default');
+      watchHandlers.get('selectedRules')(['Google', 'Github']);
+      watchHandlers.get('selectedRules')(null);
+      expect(setItemCalls).toEqual([
+        ['selectedPredefinedRule', 'default'],
+        ['selectedRules', JSON.stringify(['Google', 'Github'])]
+      ]);
     } finally {
       globalThis.localStorage = originalLocalStorage;
     }
