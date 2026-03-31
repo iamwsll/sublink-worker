@@ -87,6 +87,7 @@ export const formLogicFn = (t) => {
             groupByCountry: false,
             includeAutoSelect: true,
             groupDefaults: {},
+            customRuleGroups: [],
             enableClashUI: false,
             forceUdp: false,
             externalController: '',
@@ -149,6 +150,29 @@ export const formLogicFn = (t) => {
                 }
                 this.externalController = localStorage.getItem('externalController') || '';
                 this.externalUiDownloadUrl = localStorage.getItem('externalUiDownloadUrl') || '';
+                const savedCustomRuleGroups = localStorage.getItem('customRuleGroups');
+                if (savedCustomRuleGroups) {
+                    try {
+                        const parsedGroups = JSON.parse(savedCustomRuleGroups);
+                        if (Array.isArray(parsedGroups)) {
+                            this.customRuleGroups = parsedGroups
+                                .map(group => {
+                                    if (!group || typeof group !== 'object') return null;
+                                    const name = typeof group.name === 'string' ? group.name.trim() : '';
+                                    const urls = Array.isArray(group.urls)
+                                        ? group.urls
+                                        : (typeof group.url === 'string' ? [group.url] : []);
+                                    const normalizedUrls = urls
+                                        .filter(url => typeof url === 'string')
+                                        .map(url => url.trim())
+                                        .filter(Boolean);
+                                    if (!name || normalizedUrls.length === 0) return null;
+                                    return { name, urls: normalizedUrls };
+                                })
+                                .filter(Boolean);
+                        }
+                    } catch { }
+                }
                 this.customUA = localStorage.getItem('userAgent') || '';
                 this.configEditor = localStorage.getItem('configEditor') || '';
                 this.configType = localStorage.getItem('configType') || 'singbox';
@@ -187,6 +211,7 @@ export const formLogicFn = (t) => {
                         localStorage.setItem('groupDefaults', JSON.stringify(val || {}));
                     }, GROUP_DEFAULTS_SAVE_DEBOUNCE_MS);
                 }, { deep: true });
+                this.$watch('customRuleGroups', val => localStorage.setItem('customRuleGroups', JSON.stringify(val || [])), { deep: true });
                 this.$watch('externalController', val => localStorage.setItem('externalController', val));
                 this.$watch('externalUiDownloadUrl', val => localStorage.setItem('externalUiDownloadUrl', val));
                 this.$watch('customUA', val => localStorage.setItem('userAgent', val));
@@ -236,6 +261,56 @@ export const formLogicFn = (t) => {
                 });
             },
 
+            getCustomRuleGroupsForPayload() {
+                if (!Array.isArray(this.customRuleGroups)) return [];
+                return this.customRuleGroups
+                    .map(group => {
+                        if (!group || typeof group !== 'object') return null;
+                        const name = typeof group.name === 'string' ? group.name.trim() : '';
+                        const urls = Array.isArray(group.urls)
+                            ? group.urls
+                            : [];
+                        const normalizedUrls = urls
+                            .filter(url => typeof url === 'string')
+                            .map(url => url.trim())
+                            .filter(Boolean);
+                        if (!name || normalizedUrls.length === 0) return null;
+                        return { name, urls: normalizedUrls };
+                    })
+                    .filter(Boolean);
+            },
+
+            addCustomRuleGroup() {
+                this.customRuleGroups.push({ name: '', urls: [''] });
+            },
+
+            removeCustomRuleGroup(index) {
+                if (index < 0 || index >= this.customRuleGroups.length) return;
+                const removed = this.customRuleGroups[index];
+                this.customRuleGroups.splice(index, 1);
+                if (removed?.name) {
+                    this.selectedRules = (this.selectedRules || []).filter(name => name !== removed.name);
+                    delete this.groupDefaults[removed.name];
+                }
+            },
+
+            addCustomRuleGroupUrl(groupIndex) {
+                const group = this.customRuleGroups[groupIndex];
+                if (!group) return;
+                if (!Array.isArray(group.urls)) group.urls = [];
+                group.urls.push('');
+            },
+
+            removeCustomRuleGroupUrl(groupIndex, urlIndex) {
+                const group = this.customRuleGroups[groupIndex];
+                if (!group || !Array.isArray(group.urls)) return;
+                if (urlIndex < 0 || urlIndex >= group.urls.length) return;
+                group.urls.splice(urlIndex, 1);
+                if (group.urls.length === 0) {
+                    group.urls.push('');
+                }
+            },
+
             getSubconverterUrl() {
                 const origin = window.location.origin;
                 const params = new URLSearchParams();
@@ -255,6 +330,10 @@ export const formLogicFn = (t) => {
                         params.append('customRules', JSON.stringify(customRules));
                     }
                 } catch { }
+                const customRuleGroups = this.getCustomRuleGroupsForPayload();
+                if (customRuleGroups.length > 0) {
+                    params.append('customRuleGroups', JSON.stringify(customRuleGroups));
+                }
 
                 if (!this.includeAutoSelect) {
                     params.append('include_auto_select', 'false');
@@ -425,6 +504,10 @@ export const formLogicFn = (t) => {
                     params.append('ua', this.customUA);
                     params.append('selectedRules', JSON.stringify(this.selectedRules));
                     params.append('customRules', JSON.stringify(customRules));
+                    const customRuleGroups = this.getCustomRuleGroupsForPayload();
+                    if (customRuleGroups.length > 0) {
+                        params.append('customRuleGroups', JSON.stringify(customRuleGroups));
+                    }
 
                     if (this.groupByCountry) params.append('group_by_country', 'true');
                     if (!this.includeAutoSelect) params.append('include_auto_select', 'false');
@@ -672,6 +755,32 @@ export const formLogicFn = (t) => {
                     }
                 }
 
+                const customRuleGroups = params.get('customRuleGroups');
+                if (customRuleGroups) {
+                    try {
+                        const parsed = JSON.parse(customRuleGroups);
+                        if (Array.isArray(parsed)) {
+                            this.customRuleGroups = parsed
+                                .map(group => {
+                                    if (!group || typeof group !== 'object') return null;
+                                    const name = typeof group.name === 'string' ? group.name.trim() : '';
+                                    const urls = Array.isArray(group.urls)
+                                        ? group.urls
+                                        : (typeof group.url === 'string' ? [group.url] : []);
+                                    const normalizedUrls = urls
+                                        .filter(url => typeof url === 'string')
+                                        .map(url => url.trim())
+                                        .filter(Boolean);
+                                    if (!name || normalizedUrls.length === 0) return null;
+                                    return { name, urls: normalizedUrls };
+                                })
+                                .filter(Boolean);
+                        }
+                    } catch (e) {
+                        console.warn('Failed to parse customRuleGroups:', e);
+                    }
+                }
+
                 // Extract other parameters
                 this.groupByCountry = params.get('group_by_country') === 'true';
                 this.includeAutoSelect = params.get('include_auto_select') !== 'false';
@@ -711,7 +820,7 @@ export const formLogicFn = (t) => {
                 }
 
                 // Expand advanced options if any advanced settings are present
-                if (selectedRules || customRules || this.groupByCountry || this.enableClashUI ||
+                if (selectedRules || customRules || customRuleGroups || this.groupByCountry || this.enableClashUI ||
                     this.forceUdp || externalController || externalUiDownloadUrl || ua || configId || groupDefaults) {
                     this.showAdvanced = true;
                 }

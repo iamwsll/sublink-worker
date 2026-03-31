@@ -8,8 +8,16 @@ export const CUSTOM_RULES = [];
 export const UNIFIED_RULES = [
 	{
 		name: 'Ad Block',
-		site_rules: ['category-ads-all'],
-		ip_rules: []
+		site_rules: ['ad-block'],
+		ip_rules: [],
+		rule_set_overrides: {
+			'ad-block': {
+				singbox_format: 'source',
+				clash_format: 'text',
+				clash_behavior: 'classical',
+				url: 'https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/BanAD.list'
+			}
+		}
 	},
 	{
 		name: 'AI Services',
@@ -72,7 +80,60 @@ export const UNIFIED_RULES = [
 	{
 		name: 'Apple',
 		site_rules: ['apple'],
-		ip_rules: []
+		ip_rules: [],
+		rule_set_overrides: {
+			apple: {
+				singbox_format: 'source',
+				clash_format: 'text',
+				clash_behavior: 'classical',
+				url: 'https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Apple.list'
+			}
+		}
+	},
+	{
+		name: '隐私防护',
+		site_rules: ['privacy-protection'],
+		ip_rules: [],
+		rule_set_overrides: {
+			'privacy-protection': {
+				singbox_format: 'source',
+				clash_format: 'text',
+				clash_behavior: 'classical',
+				url: 'https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/BanEasyPrivacy.list'
+			}
+		}
+	},
+	{
+		name: 'AdBlock',
+		site_rules: ['adblock', 'adblock-china'],
+		ip_rules: [],
+		rule_set_overrides: {
+			adblock: {
+				singbox_format: 'source',
+				clash_format: 'text',
+				clash_behavior: 'classical',
+				url: 'https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/BanEasyList.list'
+			},
+			'adblock-china': {
+				singbox_format: 'source',
+				clash_format: 'text',
+				clash_behavior: 'classical',
+				url: 'https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/BanEasyListChina.list'
+			}
+		}
+	},
+	{
+		name: '应用净化',
+		site_rules: ['app-purification'],
+		ip_rules: [],
+		rule_set_overrides: {
+			'app-purification': {
+				singbox_format: 'source',
+				clash_format: 'text',
+				clash_behavior: 'classical',
+				url: 'https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/BanProgramAD.list'
+			}
+		}
 	},
 	{
 		name: 'Social Media',
@@ -115,7 +176,7 @@ export const UNIFIED_RULES = [
 export const DIRECT_DEFAULT_RULES = new Set(['Private', 'Location:CN']);
 
 export const PREDEFINED_RULE_SETS = {
-	default: ['Ad Block', 'AI Services', 'Bilibili', 'Youtube', 'Google', 'Private', 'Location:CN', 'Telegram', 'Github', 'Microsoft', 'icloud美区', 'Apple', 'Gaming', 'Non-China'],
+	default: ['Ad Block', 'AI Services', 'Bilibili', 'Youtube', 'Google', 'Private', 'Location:CN', 'Telegram', 'Github', 'Microsoft', 'icloud美区', 'Apple', '隐私防护', 'AdBlock', '应用净化', 'Gaming', 'Non-China'],
 	minimal: ['Location:CN', 'Private', 'Non-China'],
 	balanced: ['Location:CN', 'Private', 'Non-China', 'Github', 'Google', 'Youtube', 'AI Services', 'Telegram'],
 	comprehensive: UNIFIED_RULES.map(rule => rule.name)
@@ -124,6 +185,9 @@ export const PREDEFINED_RULE_SETS = {
 export const PREDEFINED_RULE_GROUP_DEFAULTS = {
 	default: {
 		'Ad Block': 'REJECT',
+		'隐私防护': 'REJECT',
+		AdBlock: 'REJECT',
+		'应用净化': 'REJECT',
 		Bilibili: 'DIRECT',
 		Microsoft: 'DIRECT',
 		Apple: 'DIRECT'
@@ -172,3 +236,83 @@ export const RULE_SET_OVERRIDES = UNIFIED_RULES.reduce((acc, rule) => {
 	});
 	return acc;
 }, {});
+
+function sanitizeRuleTagPart(value = '') {
+	return String(value)
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, '-')
+		.replace(/^-+|-+$/g, '')
+		.slice(0, 40) || 'custom';
+}
+
+function normalizeCustomRuleGroup(raw, index) {
+	if (!raw || typeof raw !== 'object') return null;
+	const name = typeof raw.name === 'string' ? raw.name.trim() : '';
+	if (!name) return null;
+	const urls = Array.isArray(raw.urls)
+		? raw.urls
+		: (typeof raw.url === 'string' ? [raw.url] : []);
+	const normalizedUrls = urls
+		.filter(url => typeof url === 'string')
+		.map(url => url.trim())
+		.filter(Boolean);
+	if (normalizedUrls.length === 0) return null;
+	return { name, urls: normalizedUrls, index };
+}
+
+function buildRuleFromCustomGroup(group) {
+	const overrides = {};
+	const siteRules = group.urls.map((url, idx) => {
+		const tag = `custom-${sanitizeRuleTagPart(group.name)}-${group.index}-${idx + 1}`;
+		overrides[tag] = {
+			singbox_format: 'source',
+			clash_format: 'text',
+			clash_behavior: 'classical',
+			url
+		};
+		return tag;
+	});
+	return {
+		name: group.name,
+		site_rules: siteRules,
+		ip_rules: [],
+		rule_set_overrides: overrides
+	};
+}
+
+export function buildRuleContext(customRuleGroups = []) {
+	const normalizedGroups = (Array.isArray(customRuleGroups) ? customRuleGroups : [])
+		.map((group, idx) => normalizeCustomRuleGroup(group, idx))
+		.filter(Boolean);
+	if (normalizedGroups.length === 0) {
+		return {
+			rules: UNIFIED_RULES,
+			ruleSetOverrides: RULE_SET_OVERRIDES
+		};
+	}
+
+	const customizedByName = new Map();
+	normalizedGroups.forEach(group => {
+		customizedByName.set(group.name, buildRuleFromCustomGroup(group));
+	});
+
+	const rules = UNIFIED_RULES.map(rule => customizedByName.get(rule.name) || rule);
+	customizedByName.forEach((rule, name) => {
+		if (!UNIFIED_RULES.some(item => item.name === name)) {
+			rules.push(rule);
+		}
+	});
+
+	const ruleSetOverrides = {};
+	rules.forEach(rule => {
+		if (!rule.rule_set_overrides) return;
+		Object.entries(rule.rule_set_overrides).forEach(([ruleName, overrides]) => {
+			ruleSetOverrides[ruleName] = overrides;
+		});
+	});
+
+	return {
+		rules,
+		ruleSetOverrides
+	};
+}

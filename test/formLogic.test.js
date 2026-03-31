@@ -55,11 +55,14 @@ describe('formLogic toString fix', () => {
     const fakeWindow = {
       APP_TRANSLATIONS: {},
       PREDEFINED_RULE_SETS: {
-        default: ['Bilibili', 'Microsoft', 'Apple']
+        default: ['Bilibili', 'Microsoft', 'Apple', '隐私防护', 'AdBlock', '应用净化']
       },
       PREDEFINED_RULE_GROUP_DEFAULTS: {
         default: {
           'Ad Block': 'REJECT',
+          '隐私防护': 'REJECT',
+          AdBlock: 'REJECT',
+          '应用净化': 'REJECT',
           Bilibili: 'DIRECT',
           Microsoft: 'DIRECT',
           Apple: 'DIRECT'
@@ -72,9 +75,12 @@ describe('formLogic toString fix', () => {
     data.selectedPredefinedRule = 'default';
     data.applyPredefinedRule();
 
-    expect(data.selectedRules).toEqual(['Bilibili', 'Microsoft', 'Apple']);
+    expect(data.selectedRules).toEqual(['Bilibili', 'Microsoft', 'Apple', '隐私防护', 'AdBlock', '应用净化']);
     expect(data.groupDefaults).toEqual({
       'Ad Block': 'REJECT',
+      '隐私防护': 'REJECT',
+      AdBlock: 'REJECT',
+      '应用净化': 'REJECT',
       Bilibili: 'DIRECT',
       Microsoft: 'DIRECT',
       Apple: 'DIRECT'

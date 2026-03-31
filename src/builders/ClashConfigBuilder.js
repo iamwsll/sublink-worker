@@ -40,13 +40,14 @@ function supportsMrsFormat(userAgent) {
 }
 
 export class ClashConfigBuilder extends BaseConfigBuilder {
-    constructor(inputString, selectedRules, customRules, baseConfig, lang, userAgent, groupByCountry = false, enableClashUI = false, externalController, externalUiDownloadUrl, includeAutoSelect = true, groupDefaults = {}, forceUdp = undefined) {
+    constructor(inputString, selectedRules, customRules, baseConfig, lang, userAgent, groupByCountry = false, enableClashUI = false, externalController, externalUiDownloadUrl, includeAutoSelect = true, groupDefaults = {}, forceUdp = undefined, customRuleGroups = []) {
         if (!baseConfig) {
             baseConfig = CLASH_CONFIG;
         }
         super(inputString, baseConfig, lang, userAgent, groupByCountry, includeAutoSelect);
         this.selectedRules = selectedRules;
         this.customRules = customRules;
+        this.customRuleGroups = Array.isArray(customRuleGroups) ? customRuleGroups : [];
         this.countryGroupNames = [];
         this.manualGroupName = null;
         this.enableClashUI = enableClashUI;
@@ -620,13 +621,13 @@ export class ClashConfigBuilder extends BaseConfigBuilder {
 
     // 生成规则
     generateRules() {
-        return generateRules(this.selectedRules, this.customRules);
+        return generateRules(this.selectedRules, this.customRules, this.customRuleGroups);
     }
 
     formatConfig() {
         const rules = this.generateRules();
         const useMrs = supportsMrsFormat(this.userAgent);
-        const { site_rule_providers, ip_rule_providers } = generateClashRuleSets(this.selectedRules, this.customRules, useMrs);
+        const { site_rule_providers, ip_rule_providers } = generateClashRuleSets(this.selectedRules, this.customRules, useMrs, this.customRuleGroups);
         this.config['rule-providers'] = {
             ...site_rule_providers,
             ...ip_rule_providers

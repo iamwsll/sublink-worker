@@ -77,6 +77,7 @@ export function createApp(bindings = {}) {
 
             const selectedRules = parseSelectedRules(c.req.query('selectedRules'));
             const customRules = parseJsonArray(c.req.query('customRules'));
+            const customRuleGroups = parseCustomRuleGroups(c.req.query('customRuleGroups'));
             const ua = c.req.query('ua') || getRequestHeader(c.req, 'User-Agent') || DEFAULT_USER_AGENT;
             const groupByCountry = parseBooleanFlag(c.req.query('group_by_country'));
             const includeAutoSelect = c.req.query('include_auto_select') !== 'false';
@@ -113,7 +114,8 @@ export function createApp(bindings = {}) {
                 externalUiDownloadUrl,
                 singboxConfigVersion,
                 includeAutoSelect,
-                groupDefaults
+                groupDefaults,
+                customRuleGroups
             );
             await builder.build();
             return c.json(builder.config);
@@ -131,6 +133,7 @@ export function createApp(bindings = {}) {
 
             const selectedRules = parseSelectedRules(c.req.query('selectedRules'));
             const customRules = parseJsonArray(c.req.query('customRules'));
+            const customRuleGroups = parseCustomRuleGroups(c.req.query('customRuleGroups'));
             const ua = c.req.query('ua') || getRequestHeader(c.req, 'User-Agent') || DEFAULT_USER_AGENT;
             const groupByCountry = parseBooleanFlag(c.req.query('group_by_country'));
             const includeAutoSelect = c.req.query('include_auto_select') !== 'false';
@@ -161,7 +164,8 @@ export function createApp(bindings = {}) {
                 externalUiDownloadUrl,
                 includeAutoSelect,
                 groupDefaults,
-                forceUdp
+                forceUdp,
+                customRuleGroups
             );
             await builder.build();
             return c.text(builder.formatConfig(), 200, {
@@ -181,6 +185,7 @@ export function createApp(bindings = {}) {
 
             const selectedRules = parseSelectedRules(c.req.query('selectedRules'));
             const customRules = parseJsonArray(c.req.query('customRules'));
+            const customRuleGroups = parseCustomRuleGroups(c.req.query('customRuleGroups'));
             const ua = c.req.query('ua') || getRequestHeader(c.req, 'User-Agent') || DEFAULT_USER_AGENT;
             const groupByCountry = parseBooleanFlag(c.req.query('group_by_country'));
             const includeAutoSelect = c.req.query('include_auto_select') !== 'false';
@@ -203,7 +208,8 @@ export function createApp(bindings = {}) {
                 ua,
                 groupByCountry,
                 includeAutoSelect,
-                groupDefaults
+                groupDefaults,
+                customRuleGroups
             );
             builder.setSubscriptionUrl(c.req.url);
             await builder.build();
@@ -240,12 +246,14 @@ export function createApp(bindings = {}) {
             const includeAutoSelect = c.req.query('include_auto_select') !== 'false';
             const groupByCountry = parseBooleanFlag(c.req.query('group_by_country'));
             const customRules = parseJsonArray(c.req.query('customRules'));
+            const customRuleGroups = parseCustomRuleGroups(c.req.query('customRuleGroups'));
             const groupDefaults = parseGroupDefaults(c.req.query('group_defaults'));
             const lang = c.get('lang');
 
             const config = generateSubconverterConfig({
                 selectedRules,
                 customRules,
+                customRuleGroups,
                 lang,
                 includeAutoSelect,
                 groupByCountry,
@@ -449,6 +457,32 @@ function parseGroupDefaults(raw) {
         return normalized;
     } catch {
         return {};
+    }
+}
+
+function parseCustomRuleGroups(raw) {
+    if (!raw) return [];
+    try {
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return [];
+        return parsed
+            .map(item => {
+                if (!item || typeof item !== 'object') return null;
+                const name = typeof item.name === 'string' ? item.name.trim() : '';
+                if (!name) return null;
+                const urls = Array.isArray(item.urls)
+                    ? item.urls
+                    : (typeof item.url === 'string' ? [item.url] : []);
+                const normalizedUrls = urls
+                    .filter(url => typeof url === 'string')
+                    .map(url => url.trim())
+                    .filter(Boolean);
+                if (normalizedUrls.length === 0) return null;
+                return { name, urls: normalizedUrls };
+            })
+            .filter(Boolean);
+    } catch {
+        return [];
     }
 }
 
