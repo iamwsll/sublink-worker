@@ -125,12 +125,14 @@ ss://YWVzLTEyOC1nY206dGVzdA@example.com:443#HK-Node-1
     const yamlText = await builder.build();
     const built = yaml.load(yamlText);
 
+    const RULE_TYPES_WITH_TARGETS = ['RULE-SET,', 'DOMAIN-', 'IP-CIDR,', 'SRC-IP-CIDR,'];
+    const TARGET_INDEX = 2; // Clash rule format: TYPE,PATTERN,TARGET[,OPTIONS]
     const groupNames = new Set((built['proxy-groups'] || []).map(group => group?.name).filter(Boolean));
     const specialTargets = new Set(['DIRECT', 'REJECT']);
     (built.rules || [])
-      .filter(rule => typeof rule === 'string' && (rule.startsWith('RULE-SET,') || rule.startsWith('DOMAIN-') || rule.startsWith('IP-CIDR,') || rule.startsWith('SRC-IP-CIDR,')))
+      .filter(rule => typeof rule === 'string' && RULE_TYPES_WITH_TARGETS.some(prefix => rule.startsWith(prefix)))
       .forEach((rule) => {
-        const target = rule.split(',')[2];
+        const target = rule.split(',')[TARGET_INDEX];
         expect(groupNames.has(target) || specialTargets.has(target)).toBe(true);
       });
   });
