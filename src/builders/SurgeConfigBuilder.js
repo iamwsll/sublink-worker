@@ -5,11 +5,12 @@ import { addProxyWithDedup } from './helpers/proxyHelpers.js';
 import { buildSelectorMembers, buildNodeSelectMembers, uniqueNames, applyGroupPreferredDefault } from './helpers/groupBuilder.js';
 
 export class SurgeConfigBuilder extends BaseConfigBuilder {
-    constructor(inputString, selectedRules, customRules, baseConfig, lang, userAgent, groupByCountry, includeAutoSelect = true, groupDefaults = {}) {
+    constructor(inputString, selectedRules, customRules, baseConfig, lang, userAgent, groupByCountry, includeAutoSelect = true, groupDefaults = {}, customRuleGroups = []) {
         const resolvedBaseConfig = baseConfig ?? SURGE_CONFIG;
         super(inputString, resolvedBaseConfig, lang, userAgent, groupByCountry, includeAutoSelect);
         this.selectedRules = selectedRules;
         this.customRules = customRules;
+        this.customRuleGroups = Array.isArray(customRuleGroups) ? customRuleGroups : [];
         this.subscriptionUrl = null;
         this.countryGroupNames = [];
         this.manualGroupName = null;
@@ -370,7 +371,7 @@ export class SurgeConfigBuilder extends BaseConfigBuilder {
     }
 
     formatConfig() {
-        const rules = generateRules(this.selectedRules, this.customRules);
+        const rules = generateRules(this.selectedRules, this.customRules, this.customRuleGroups);
         let finalConfig = [];
 
         if (this.subscriptionUrl) {

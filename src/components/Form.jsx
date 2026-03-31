@@ -172,6 +172,88 @@ export const Form = (props) => {
     ))}
   </div>
 
+  <div class="mt-5 space-y-4">
+    <div class="flex items-center justify-between">
+      <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300">{t('customRuleGroups')}</h4>
+      <button
+        type="button"
+        x-on:click="addCustomRuleGroup(); selectedPredefinedRule = 'custom'"
+        class="px-3 py-1.5 text-xs rounded-lg border border-primary-200 dark:border-primary-700 text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20"
+      >
+        {t('addCustomRuleGroup')}
+      </button>
+    </div>
+    <template x-for="(customGroup, groupIndex) in customRuleGroups" x-bind:key="groupIndex">
+      <div class="p-3 rounded-lg border border-gray-200 dark:border-gray-700 space-y-3">
+        <div class="flex items-center gap-2">
+          <input
+            type="checkbox"
+            x-bind:value="customGroup.name"
+            x-model="selectedRules"
+            x-on:change="selectedPredefinedRule = 'custom'"
+            class="w-4 h-4 text-primary-600 rounded border-gray-300 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600"
+          />
+          <input
+            type="text"
+            x-model="customGroup.name"
+            x-on:input="selectedPredefinedRule = 'custom'"
+            class="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            placeholder={t('customRuleGroupNamePlaceholder')}
+          />
+          <button
+            type="button"
+            x-on:click="removeCustomRuleGroup(groupIndex); selectedPredefinedRule = 'custom'"
+            class="px-2 py-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
+            title={t('removeCustomRuleGroup')}
+          >
+            <i class="fas fa-trash-alt"></i>
+          </button>
+        </div>
+        <template x-for="(url, urlIndex) in customGroup.urls" x-bind:key="urlIndex">
+          <div class="flex items-center gap-2">
+            <input
+              type="url"
+              x-model="customGroup.urls[urlIndex]"
+              x-on:input="selectedPredefinedRule = 'custom'"
+              class="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              placeholder="https://example.com/rules.list"
+            />
+            <button
+              type="button"
+              x-on:click="removeCustomRuleGroupUrl(groupIndex, urlIndex); selectedPredefinedRule = 'custom'"
+              class="px-2 py-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+              title={t('removeRuleSetUrl')}
+            >
+              <i class="fas fa-minus"></i>
+            </button>
+          </div>
+        </template>
+        <div>
+          <button
+            type="button"
+            x-on:click="addCustomRuleGroupUrl(groupIndex); selectedPredefinedRule = 'custom'"
+            class="px-3 py-1.5 text-xs rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+          >
+            {t('addRuleSetUrl')}
+          </button>
+        </div>
+        <div x-show="customGroup.name && selectedRules.includes(customGroup.name)" class="mt-3">
+          <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">{t('policyDefaultOption')}</label>
+          <select
+            x-model="groupDefaults[customGroup.name]"
+            class="w-full px-2 py-1.5 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700 text-xs text-gray-700 dark:text-gray-200"
+          >
+            <option value="">{t('followBuiltInDefault')}</option>
+            <option value="Node Select" x-text="translateOutbound('Node Select')"></option>
+            <option value="DIRECT">DIRECT</option>
+            <option value="REJECT">REJECT</option>
+            <option value="Auto Select" x-show="includeAutoSelect" x-text="translateOutbound('Auto Select')"></option>
+          </select>
+        </div>
+      </div>
+    </template>
+  </div>
+
           </div>
 
   {/* Custom Rules Component */ }

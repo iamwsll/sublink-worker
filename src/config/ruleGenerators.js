@@ -3,7 +3,7 @@
  * Functions for generating rules and rule sets
  */
 
-import { UNIFIED_RULES, PREDEFINED_RULE_SETS, SITE_RULE_SETS, IP_RULE_SETS, CLASH_SITE_RULE_SETS, CLASH_IP_RULE_SETS, RULE_SET_OVERRIDES } from './rules.js';
+import { PREDEFINED_RULE_SETS, buildRuleContext } from './rules.js';
 import { SITE_RULE_SET_BASE_URL, IP_RULE_SET_BASE_URL, CLASH_SITE_RULE_SET_BASE_URL, CLASH_IP_RULE_SET_BASE_URL } from './ruleUrls.js';
 
 function toStringArray(value) {
@@ -18,22 +18,24 @@ function toStringArray(value) {
 	return [];
 }
 
-function getRuleSetOverride(ruleName) {
-	return RULE_SET_OVERRIDES[ruleName] || null;
+function getRuleSetOverride(ruleSetOverrides, ruleName) {
+	return ruleSetOverrides[ruleName] || null;
 }
 
 // Helper function to get outbounds based on selected rule names
-export function getOutbounds(selectedRuleNames) {
+export function getOutbounds(selectedRuleNames, customRuleGroups = []) {
+	const { rules } = buildRuleContext(customRuleGroups);
 	if (!selectedRuleNames || !Array.isArray(selectedRuleNames)) {
 		return [];
 	}
-	return UNIFIED_RULES
+	return rules
 		.filter(rule => selectedRuleNames.includes(rule.name))
 		.map(rule => rule.name);
 }
 
 // Helper function to generate rules based on selected rule names
-export function generateRules(selectedRules = [], customRules = []) {
+export function generateRules(selectedRules = [], customRules = [], customRuleGroups = []) {
+	const { rules: unifiedRules } = buildRuleContext(customRuleGroups);
 	if (typeof selectedRules === 'string' && PREDEFINED_RULE_SETS[selectedRules]) {
 		selectedRules = PREDEFINED_RULE_SETS[selectedRules];
 	}
@@ -42,11 +44,11 @@ export function generateRules(selectedRules = [], customRules = []) {
 		selectedRules = PREDEFINED_RULE_SETS.minimal;
 	}
 
-	const rules = [];
+	const generatedRules = [];
 
-	UNIFIED_RULES.forEach(rule => {
+	unifiedRules.forEach(rule => {
 		if (selectedRules.includes(rule.name)) {
-			rules.push({
+			generatedRules.push({
 				site_rules: rule.site_rules,
 				ip_rules: rule.ip_rules,
 				domain_suffix: rule?.domain_suffix,
@@ -59,7 +61,7 @@ export function generateRules(selectedRules = [], customRules = []) {
 
 	customRules.reverse();
 	customRules.forEach((rule) => {
-		rules.unshift({
+		generatedRules.unshift({
 			site_rules: toStringArray(rule.site),
 			ip_rules: toStringArray(rule.ip),
 			domain_suffix: toStringArray(rule.domain_suffix),
@@ -71,10 +73,11 @@ export function generateRules(selectedRules = [], customRules = []) {
 		});
 	});
 
-	return rules;
+	return generatedRules;
 }
 
-export function generateRuleSets(selectedRules = [], customRules = []) {
+export function generateRuleSets(selectedRules = [], customRules = [], customRuleGroups = []) {
+	const { rules: unifiedRules, ruleSetOverrides } = buildRuleContext(customRuleGroups);
 	if (typeof selectedRules === 'string' && PREDEFINED_RULE_SETS[selectedRules]) {
 		selectedRules = PREDEFINED_RULE_SETS[selectedRules];
 	}
@@ -90,7 +93,7 @@ export function generateRuleSets(selectedRules = [], customRules = []) {
 
 	const ruleSets = [];
 
-	UNIFIED_RULES.forEach(rule => {
+	unifiedRules.forEach(rule => {
 		if (selectedRulesSet.has(rule.name)) {
 			rule.site_rules.forEach(siteRule => siteRuleSets.add(siteRule));
 			rule.ip_rules.forEach(ipRule => ipRuleSets.add(ipRule));
@@ -98,21 +101,24 @@ export function generateRuleSets(selectedRules = [], customRules = []) {
 	});
 
 	const site_rule_sets = Array.from(siteRuleSets).map(rule => {
-		const override = getRuleSetOverride(rule);
+		const override = getRuleSetOverride(ruleSetOverrides, rule);
 		return {
 			tag: rule,
 			type: 'remote',
 			format: override?.singbox_format || 'binary',
-			url: override?.url || `${SITE_RULE_SET_BASE_URL}${SITE_RULE_SETS[rule]}`,
+			url: override?.url || `${SITE_RULE_SET_BASE_URL}geosite-${rule}.srs`,
 		};
 	});
 
-	const ip_rule_sets = Array.from(ipRuleSets).map(rule => ({
-		tag: `${rule}-ip`,
-		type: 'remote',
-		format: 'binary',
-		url: `${IP_RULE_SET_BASE_URL}${IP_RULE_SETS[rule]}`,
-	}));
+	const ip_rule_sets = Array.from(ipRuleSets).map(rule => {
+		const override = getRuleSetOverride(ruleSetOverrides, `${rule}-ip`);
+		return {
+			tag: `${rule}-ip`,
+			type: 'remote',
+			format: override?.singbox_format || 'binary',
+			url: override?.url || `${IP_RULE_SET_BASE_URL}geoip-${rule}.srs`,
+		};
+	});
 
 	if (!selectedRules.includes('Non-China')) {
 		site_rule_sets.push({
@@ -150,7 +156,8 @@ export function generateRuleSets(selectedRules = [], customRules = []) {
 }
 
 // Generate rule sets for Clash using .mrs format
-export function generateClashRuleSets(selectedRules = [], customRules = [], useMrs = true) {
+export function generateClashRuleSets(selectedRules = [], customRules = [], useMrs = true, customRuleGroups = []) {
+	const { rules: unifiedRules, ruleSetOverrides } = buildRuleContext(customRuleGroups);
 	if (typeof selectedRules === 'string' && PREDEFINED_RULE_SETS[selectedRules]) {
 		selectedRules = PREDEFINED_RULE_SETS[selectedRules];
 	}
@@ -168,7 +175,7 @@ export function generateClashRuleSets(selectedRules = [], customRules = [], useM
 	const siteRuleSets = new Set();
 	const ipRuleSets = new Set();
 
-	UNIFIED_RULES.forEach(rule => {
+	unifiedRules.forEach(rule => {
 		if (selectedRulesSet.has(rule.name)) {
 			rule.site_rules.forEach(siteRule => siteRuleSets.add(siteRule));
 			rule.ip_rules.forEach(ipRule => ipRuleSets.add(ipRule));
@@ -179,7 +186,7 @@ export function generateClashRuleSets(selectedRules = [], customRules = [], useM
 	const ip_rule_providers = {};
 
 	Array.from(siteRuleSets).forEach(rule => {
-		const override = getRuleSetOverride(rule);
+		const override = getRuleSetOverride(ruleSetOverrides, rule);
 		const ruleFormat = override?.clash_format || format;
 		const ruleExt = ruleFormat === 'text' ? '.list' : (ext || '.mrs');
 		site_rule_providers[rule] = {
@@ -193,12 +200,13 @@ export function generateClashRuleSets(selectedRules = [], customRules = [], useM
 	});
 
 	Array.from(ipRuleSets).forEach(rule => {
+		const override = getRuleSetOverride(ruleSetOverrides, `${rule}-ip`);
 		ip_rule_providers[`${rule}-ip`] = {
 			type: 'http',
-			format: format,
-			behavior: 'ipcidr',
-			url: `${CLASH_IP_RULE_SET_BASE_URL}${rule}${ext}`,
-			path: `./ruleset/${rule}-ip${ext}`,
+			format: override?.clash_format || format,
+			behavior: override?.clash_behavior || 'ipcidr',
+			url: override?.url || `${CLASH_IP_RULE_SET_BASE_URL}${rule}${ext}`,
+			path: `./ruleset/${rule}-ip${override?.clash_format === 'text' ? '.list' : ext}`,
 			interval: 86400
 		};
 	});

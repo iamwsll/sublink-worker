@@ -42,7 +42,7 @@ describe('GET /subconverter', () => {
         });
 
         // Check for specific rules from default set
-        expect(text).toContain('GEOSITE,category-ads-all');
+        expect(text).toContain('ruleset=🛑 广告拦截,https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/BanAD.list');
         expect(text).toContain('GEOSITE,google');
         expect(text).toContain('GEOSITE,youtube');
         expect(text).toContain('GEOIP,telegram');
@@ -69,7 +69,7 @@ describe('GET /subconverter', () => {
         const text = await res.text();
 
         // comprehensive includes all rules
-        expect(text).toContain('GEOSITE,category-ads-all');
+        expect(text).toContain('ruleset=🛑 广告拦截,https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/BanAD.list');
         expect(text).toContain('GEOSITE,category-ai-!cn');
         expect(text).toContain('GEOSITE,google');
         expect(text).toContain('GEOSITE,bilibili');
@@ -200,11 +200,25 @@ describe('GET /subconverter', () => {
         const res = await app.request(`http://localhost/subconverter?selectedRules=${encodeURIComponent(rules)}`);
         const text = await res.text();
 
-        const iCloudLine = text.indexOf('GEOSITE,icloud-us');
-        const appleLine = text.indexOf('GEOSITE,apple');
+        const iCloudLine = text.indexOf('https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/release/rule/Loon/iCloud/iCloud.list');
+        const appleLine = text.indexOf('https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Apple.list');
         expect(iCloudLine).toBeGreaterThan(-1);
         expect(appleLine).toBeGreaterThan(-1);
         expect(iCloudLine).toBeLessThan(appleLine);
+    });
+
+    it('supports customRuleGroups for custom ruleset urls', async () => {
+        const app = createTestApp();
+        const selectedRules = JSON.stringify(['自定义策略']);
+        const customRuleGroups = JSON.stringify([
+            { name: '自定义策略', urls: ['https://example.com/custom-a.list', 'https://example.com/custom-b.list'] }
+        ]);
+        const res = await app.request(`http://localhost/subconverter?selectedRules=${encodeURIComponent(selectedRules)}&customRuleGroups=${encodeURIComponent(customRuleGroups)}`);
+        const text = await res.text();
+
+        expect(text).toContain('ruleset=自定义策略,https://example.com/custom-a.list');
+        expect(text).toContain('ruleset=自定义策略,https://example.com/custom-b.list');
+        expect(text).toMatch(/custom_proxy_group=自定义策略`select`/);
     });
 
     it('supports lang parameter for i18n', async () => {
@@ -340,7 +354,7 @@ describe('GET /subconverter', () => {
             // default preset includes Google and Youtube
             expect(text).toContain('GEOSITE,google');
             expect(text).toContain('GEOSITE,youtube');
-            expect(text).toContain('GEOSITE,category-ads-all');
+            expect(text).toContain('ruleset=🛑 广告拦截,https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/BanAD.list');
         });
     });
 });

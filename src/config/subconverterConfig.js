@@ -6,10 +6,10 @@
 import { createTranslator } from '../i18n/index.js';
 import { generateRules } from './ruleGenerators.js';
 import { COUNTRY_DATA } from '../utils.js';
-import { DIRECT_DEFAULT_RULES } from './rules.js';
+import { DIRECT_DEFAULT_RULES, buildRuleContext } from './rules.js';
 
 // Rule names that should default to REJECT
-const REJECT_RULES = new Set(['Ad Block']);
+const REJECT_RULES = new Set(['Ad Block', '隐私防护', 'AdBlock', '应用净化']);
 
 const SPEED_TEST_URL = 'http://www.gstatic.com/generate_204';
 
@@ -44,9 +44,10 @@ function buildCountryGroupRefs(countryGroupNames) {
  * @param {boolean} options.groupByCountry - Whether to group proxies by country
  * @returns {string} INI format config string
  */
-export function generateSubconverterConfig({ selectedRules = [], customRules = [], lang = 'zh-CN', includeAutoSelect = true, groupByCountry = false, groupDefaults = {} } = {}) {
+export function generateSubconverterConfig({ selectedRules = [], customRules = [], customRuleGroups = [], lang = 'zh-CN', includeAutoSelect = true, groupByCountry = false, groupDefaults = {} } = {}) {
 	const t = createTranslator(lang);
-	const rules = generateRules(selectedRules, customRules);
+	const rules = generateRules(selectedRules, customRules, customRuleGroups);
+	const { ruleSetOverrides } = buildRuleContext(customRuleGroups);
 
 	const lines = ['[custom]'];
 
@@ -80,7 +81,13 @@ export function generateSubconverterConfig({ selectedRules = [], customRules = [
 		}
 		if (rule.site_rules) {
 			rule.site_rules.forEach(site => {
-				if (site) lines.push(`ruleset=${groupName},[]GEOSITE,${site}`);
+				if (!site) return;
+				const override = ruleSetOverrides?.[site];
+				if (override?.url) {
+					lines.push(`ruleset=${groupName},${override.url}`);
+				} else {
+					lines.push(`ruleset=${groupName},[]GEOSITE,${site}`);
+				}
 			});
 		}
 	});
@@ -91,7 +98,13 @@ export function generateSubconverterConfig({ selectedRules = [], customRules = [
 
 		if (rule.ip_rules) {
 			rule.ip_rules.forEach(ip => {
-				if (ip) lines.push(`ruleset=${groupName},[]GEOIP,${ip}`);
+				if (!ip) return;
+				const override = ruleSetOverrides?.[`${ip}-ip`];
+				if (override?.url) {
+					lines.push(`ruleset=${groupName},${override.url}`);
+				} else {
+					lines.push(`ruleset=${groupName},[]GEOIP,${ip}`);
+				}
 			});
 		}
 		if (rule.ip_cidr) {

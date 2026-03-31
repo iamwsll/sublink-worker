@@ -12,6 +12,9 @@ describe('selectedRules backward compatibility', () => {
         const result = parseSelectedRules('default');
         expect(result).toEqual(PREDEFINED_RULE_SETS.default);
         expect(result).toContain('Ad Block');
+        expect(result).toContain('隐私防护');
+        expect(result).toContain('AdBlock');
+        expect(result).toContain('应用净化');
         expect(result).toContain('Non-China');
     });
 
