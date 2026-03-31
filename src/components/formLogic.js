@@ -1,5 +1,7 @@
 export const formLogicFn = (t) => {
     const GROUP_DEFAULTS_SAVE_DEBOUNCE_MS = 120;
+    const DIRECT_DEFAULT_RULES = new Set(['Private', 'Location:CN']);
+    const REJECT_DEFAULT_RULES = new Set(['Ad Block', '隐私防护', 'AdBlock', '应用净化']);
     // Keep this helper inlined instead of importing from utils so formLogicFn.toString()
     // remains self-contained when injected into the browser runtime.
     const normalizeCustomRuleGroups = (rawGroups = []) => {
@@ -253,6 +255,30 @@ export const formLogicFn = (t) => {
                 } else {
                     this.groupDefaults = {};
                 }
+            },
+
+            getEffectiveDefaultPolicy(ruleName, isCustomGroup = false) {
+                const presetDefaults = window.PREDEFINED_RULE_GROUP_DEFAULTS?.[this.selectedPredefinedRule];
+                const presetPreferred = presetDefaults?.[ruleName];
+                if (typeof presetPreferred === 'string' && presetPreferred.trim()) {
+                    return presetPreferred.trim();
+                }
+                if (isCustomGroup) {
+                    return 'Node Select';
+                }
+                if (REJECT_DEFAULT_RULES.has(ruleName)) {
+                    return 'REJECT';
+                }
+                if (DIRECT_DEFAULT_RULES.has(ruleName)) {
+                    return 'DIRECT';
+                }
+                return 'Node Select';
+            },
+
+            getFollowBuiltInDefaultLabel(ruleName, isCustomGroup = false) {
+                const fallbackText = window.APP_TRANSLATIONS?.followBuiltInDefault || '跟随内置默认';
+                const policy = this.getEffectiveDefaultPolicy(ruleName, isCustomGroup);
+                return `${fallbackText} (${this.translateOutbound(policy)})`;
             },
 
             translateOutbound(name) {

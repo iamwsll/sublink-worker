@@ -161,7 +161,7 @@ export const Form = (props) => {
             x-model={`groupDefaults[${JSON.stringify(rule.name)}]`}
             class="w-full px-2 py-1.5 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700 text-xs text-gray-700 dark:text-gray-200"
           >
-            <option value="">{t('followBuiltInDefault')}</option>
+            <option value="" x-text={`getFollowBuiltInDefaultLabel(${JSON.stringify(rule.name)})`}></option>
             <option value="Node Select" x-text="translateOutbound('Node Select')"></option>
             <option value="DIRECT">DIRECT</option>
             {rule.name === 'Ad Block' && <option value="REJECT">REJECT</option>}
@@ -243,7 +243,7 @@ export const Form = (props) => {
             x-model="groupDefaults[customGroup.name]"
             class="w-full px-2 py-1.5 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700 text-xs text-gray-700 dark:text-gray-200"
           >
-            <option value="">{t('followBuiltInDefault')}</option>
+            <option value="" x-text="getFollowBuiltInDefaultLabel(customGroup.name, true)"></option>
             <option value="Node Select" x-text="translateOutbound('Node Select')"></option>
             <option value="DIRECT">DIRECT</option>
             <option value="REJECT">REJECT</option>
