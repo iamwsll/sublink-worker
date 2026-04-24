@@ -119,6 +119,10 @@ export function createApp(bindings = {}) {
                 customRuleGroups
             );
             await builder.build();
+            const userinfo = builder.getSubscriptionUserinfo();
+            if (userinfo) {
+                c.header('subscription-userinfo', userinfo);
+            }
             return c.json(builder.config);
         } catch (error) {
             return handleError(c, error, runtime.logger);
@@ -169,9 +173,12 @@ export function createApp(bindings = {}) {
                 customRuleGroups
             );
             await builder.build();
-            return c.text(builder.formatConfig(), 200, {
-                'Content-Type': 'text/yaml; charset=utf-8'
-            });
+            const userinfo = builder.getSubscriptionUserinfo();
+            const headers = { 'Content-Type': 'text/yaml; charset=utf-8' };
+            if (userinfo) {
+                headers['subscription-userinfo'] = userinfo;
+            }
+            return c.text(builder.formatConfig(), 200, headers);
         } catch (error) {
             return handleError(c, error, runtime.logger);
         }
@@ -215,7 +222,10 @@ export function createApp(bindings = {}) {
             builder.setSubscriptionUrl(c.req.url);
             await builder.build();
 
-            c.header('subscription-userinfo', 'upload=0; download=0; total=10737418240; expire=2546249531');
+            const userinfo = builder.getSubscriptionUserinfo();
+            if (userinfo) {
+                c.header('subscription-userinfo', userinfo);
+            }
             return c.text(builder.formatConfig());
         } catch (error) {
             return handleError(c, error, runtime.logger);
