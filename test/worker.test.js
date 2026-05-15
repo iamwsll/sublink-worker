@@ -119,12 +119,6 @@ describe('Worker', () => {
         const nodeSelect = (parsed['proxy-groups'] || []).find(g => g?.name === '🚀 节点选择');
         expect(nodeSelect?.proxies).toEqual([
             '🚀 手动切换',
-            '🇭🇰 香港节点',
-            '🇨🇳 台湾节点',
-            '🇸🇬 狮城节点',
-            '🇯🇵 日本节点',
-            '🇺🇲 美国节点',
-            '🇰🇷 韩国节点',
             '♻️ 自动选择',
             'DIRECT'
         ]);
@@ -134,8 +128,15 @@ describe('Worker', () => {
             return !hasProxies && !hasProviders;
         });
         expect(invalidGroups).toEqual([]);
-        const netflixNode = (parsed['proxy-groups'] || []).find(g => g?.name === '🎥 奈飞节点');
-        expect(netflixNode?.proxies).toContain('香港节点1');
+        const removedGroups = new Set(['🇭🇰 香港节点', '🇨🇳 台湾节点', '🇸🇬 狮城节点', '🇯🇵 日本节点', '🇺🇲 美国节点', '🇰🇷 韩国节点', '🎥 奈飞节点']);
+        const groupNames = new Set((parsed['proxy-groups'] || []).map(group => group.name));
+        for (const removedGroup of removedGroups) {
+            expect(groupNames.has(removedGroup)).toBe(false);
+        }
+        const staleReferences = (parsed['proxy-groups'] || [])
+            .flatMap(group => group.proxies || [])
+            .filter(member => removedGroups.has(member));
+        expect(staleReferences).toEqual([]);
     });
 
     it('GET /clash fetches and caches the default wsll_exp Clash base config', async () => {

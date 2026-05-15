@@ -185,6 +185,16 @@ const WSLL_EXP_LINES_BEFORE_BASES = [
 	''
 ];
 
+const OMITTED_DEFAULT_CLASH_GROUPS = new Set([
+	'🇭🇰 香港节点',
+	'🇯🇵 日本节点',
+	'🇺🇲 美国节点',
+	'🇨🇳 台湾节点',
+	'🇸🇬 狮城节点',
+	'🇰🇷 韩国节点',
+	'🎥 奈飞节点'
+]);
+
 function getWsllExpRulesetLines() {
 	return WSLL_EXP_LINES_BEFORE_BASES.filter(line => line.startsWith('ruleset='));
 }
@@ -279,7 +289,10 @@ function appendGroupMembers(target, members = [], proxyNames = []) {
 	members.forEach(member => {
 		if (!member) return;
 		if (member.startsWith('[]')) {
-			target.proxies.push(member.slice(2));
+			const groupOrProxyName = member.slice(2);
+			if (!OMITTED_DEFAULT_CLASH_GROUPS.has(groupOrProxyName)) {
+				target.proxies.push(groupOrProxyName);
+			}
 			return;
 		}
 		const matches = getMatchedProxyNames(member, proxyNames);
@@ -317,6 +330,7 @@ function buildWsllExpProxyGroups({ proxyNames = [], providerNames = [] } = {}) {
 		const payload = line.slice('custom_proxy_group='.length);
 		const [name, type, ...parts] = payload.split('`');
 		if (!name || !type) return null;
+		if (OMITTED_DEFAULT_CLASH_GROUPS.has(name)) return null;
 
 		if (type === 'url-test') {
 			const [pattern = '.*', url = 'http://www.gstatic.com/generate_204', timing = '300'] = parts;
