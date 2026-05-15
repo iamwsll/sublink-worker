@@ -176,6 +176,7 @@ export const UNIFIED_RULES = [
 
 // Rule names that should default to DIRECT instead of Node Select
 export const DIRECT_DEFAULT_RULES = new Set(['Private', 'Location:CN']);
+export const REJECT_ACTION_RULES = new Set(['Ad Block']);
 
 export const PREDEFINED_RULE_SETS = {
 	default: ['隐私防护', 'AdBlock', '应用净化', 'Ad Block', 'AI Services', 'Bilibili', 'Youtube', 'Google', 'Private', 'Location:CN', 'Telegram', 'Github', 'Microsoft', 'icloud美区', 'Apple', 'Gaming', 'Non-China'],
