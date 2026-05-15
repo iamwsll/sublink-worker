@@ -13,6 +13,7 @@
  * @typedef {Object} RuntimeConfig
  * @property {number} [configTtlSeconds]
  * @property {number} [shortLinkTtlSeconds]
+ * @property {number} [wsllExpClashBaseCacheTtlSeconds]
  */
 
 /**
@@ -24,14 +25,15 @@
  */
 
 const DEFAULTS = {
-    configTtlSeconds: 60 * 60 * 24 * 30
+    configTtlSeconds: 60 * 60 * 24 * 30,
+    wsllExpClashBaseCacheTtlSeconds: 600
 };
 
 /**
  * Normalize optional runtime bindings and provide safe defaults.
  *
  * @param {RuntimeBindings | undefined} runtime
- * @returns {{ kv: KeyValueStore | null, assetFetcher: AssetFetcher | null, logger: Console, config: RuntimeConfig & { configTtlSeconds: number, shortLinkTtlSeconds: number | null } }}
+ * @returns {{ kv: KeyValueStore | null, assetFetcher: AssetFetcher | null, logger: Console, config: RuntimeConfig & { configTtlSeconds: number, shortLinkTtlSeconds: number | null, wsllExpClashBaseCacheTtlSeconds: number } }}
  */
 export function normalizeRuntime(runtime = {}) {
     return {
@@ -40,7 +42,8 @@ export function normalizeRuntime(runtime = {}) {
         logger: runtime.logger ?? console,
         config: {
             configTtlSeconds: runtime.config?.configTtlSeconds ?? DEFAULTS.configTtlSeconds,
-            shortLinkTtlSeconds: runtime.config?.shortLinkTtlSeconds ?? null
+            shortLinkTtlSeconds: runtime.config?.shortLinkTtlSeconds ?? null,
+            wsllExpClashBaseCacheTtlSeconds: runtime.config?.wsllExpClashBaseCacheTtlSeconds ?? DEFAULTS.wsllExpClashBaseCacheTtlSeconds
         }
     };
 }

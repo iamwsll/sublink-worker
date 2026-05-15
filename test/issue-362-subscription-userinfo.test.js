@@ -6,6 +6,7 @@ import { decodeBase64 } from '../src/utils.js';
 const subscriptionUserinfo = 'upload=123; download=456; total=1024; expire=1893456000';
 const remoteSubscriptionUrl = 'https://airport.example.com/sub?token=abc';
 const proxyUri = 'ss://YWVzLTEyOC1nY206cGFzcw@example.com:443#Issue362';
+const wsllBaseConfig = 'mixed-port: 7890\nproxies: []\nproxy-groups: []\nrules: []\n';
 
 function createTestApp() {
     return createApp({
@@ -20,16 +21,27 @@ function createTestApp() {
 }
 
 function mockRemoteSubscription() {
-    vi.stubGlobal('fetch', vi.fn(async () => ({
-        ok: true,
-        status: 200,
-        text: async () => proxyUri,
-        headers: {
-            get: (name) => name.toLowerCase() === 'subscription-userinfo'
-                ? subscriptionUserinfo
-                : null
+    vi.stubGlobal('fetch', vi.fn(async (input) => {
+        const url = String(input);
+        if (url.includes('GeneralClashConfig.yml')) {
+            return {
+                ok: true,
+                status: 200,
+                text: async () => wsllBaseConfig,
+                headers: { get: () => null }
+            };
         }
-    })));
+        return {
+            ok: true,
+            status: 200,
+            text: async () => proxyUri,
+            headers: {
+                get: (name) => name.toLowerCase() === 'subscription-userinfo'
+                    ? subscriptionUserinfo
+                    : null
+            }
+        };
+    }));
 }
 
 describe('Issue #362 - subscription userinfo passthrough', () => {

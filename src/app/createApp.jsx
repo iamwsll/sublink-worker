@@ -1,7 +1,6 @@
 /** @jsxRuntime automatic */
 /** @jsxImportSource hono/jsx */
 import { Hono } from 'hono';
-import yaml from 'js-yaml';
 import { Layout } from '../components/Layout.jsx';
 import { Navbar } from '../components/Navbar.jsx';
 import { Form } from '../components/Form.jsx';
@@ -15,9 +14,10 @@ import { encodeBase64, tryDecodeSubscriptionLines, parseBool } from '../utils.js
 import { APP_NAME, APP_SUBTITLE } from '../constants.js';
 import { ShortLinkService } from '../services/shortLinkService.js';
 import { ConfigStorageService } from '../services/configStorageService.js';
-import { ServiceError, MissingDependencyError, InvalidConfigError } from '../services/errors.js';
+import { ServiceError, MissingDependencyError } from '../services/errors.js';
+import { normalizeClashRuleBaseCacheTtl, resolveClashRuleBaseConfig } from '../services/clashRuleBaseCache.js';
 import { normalizeRuntime } from '../runtime/runtimeConfig.js';
-import { PREDEFINED_RULE_SETS, SING_BOX_CONFIG, SING_BOX_CONFIG_V1_11, generateSubconverterConfig, generateWsllExpSubconverterConfig, WSLL_EXP_CLASH_BASE_CONFIG } from '../config/index.js';
+import { PREDEFINED_RULE_SETS, SING_BOX_CONFIG, SING_BOX_CONFIG_V1_11, generateSubconverterConfig, generateWsllExpSubconverterConfig, WSLL_EXP_CLASH_BASE_CONFIG, WSLL_EXP_CLASH_RULE_BASE } from '../config/index.js';
 import { normalizeCustomRuleGroups } from '../utils/customRuleGroups.js';
 
 const DEFAULT_USER_AGENT = 'curl/7.74.0';
@@ -150,6 +150,12 @@ export function createApp(bindings = {}) {
             const configId = c.req.query('configId');
             const forceUdp = parseBool(c.req.query('udp'));
             const clashRuleBase = c.req.query('clash_rule_base') || c.req.query('clashRuleBase');
+            const clashRuleBaseCacheTtl = normalizeClashRuleBaseCacheTtl(
+                c.req.query('clash_rule_base_ttl') || c.req.query('clashRuleBaseTtl'),
+                runtime.config.wsllExpClashBaseCacheTtlSeconds
+            );
+            const refreshClashRuleBase = parseBooleanFlag(c.req.query('clash_rule_base_refresh')) ||
+                parseBooleanFlag(c.req.query('refresh_clash_rule_base'));
             const lang = c.get('lang');
             const useWsllExpClash = shouldUseWsllExpClash(c.req.query('selectedRules'), selectedRules, customRules, customRuleGroups);
 
@@ -158,9 +164,24 @@ export function createApp(bindings = {}) {
                 const storage = requireConfigStorage(services.configStorage);
                 baseConfig = await storage.getConfigById(configId);
             } else if (clashRuleBase) {
-                baseConfig = await fetchClashRuleBaseConfig(clashRuleBase, ua);
+                baseConfig = await resolveClashRuleBaseConfig({
+                    url: clashRuleBase,
+                    userAgent: ua,
+                    kv: runtime.kv,
+                    cacheTtlSeconds: clashRuleBaseCacheTtl,
+                    refresh: refreshClashRuleBase,
+                    logger: runtime.logger
+                });
             } else if (useWsllExpClash) {
-                baseConfig = WSLL_EXP_CLASH_BASE_CONFIG;
+                baseConfig = await resolveClashRuleBaseConfig({
+                    url: WSLL_EXP_CLASH_RULE_BASE,
+                    userAgent: ua,
+                    kv: runtime.kv,
+                    cacheTtlSeconds: clashRuleBaseCacheTtl,
+                    refresh: refreshClashRuleBase,
+                    fallbackConfig: WSLL_EXP_CLASH_BASE_CONFIG,
+                    logger: runtime.logger
+                });
             }
 
             const builder = new ClashConfigBuilder(
@@ -523,34 +544,6 @@ function shouldUseWsllExpClash(rawSelectedRules, selectedRules = [], customRules
     if (Array.isArray(customRuleGroups) && customRuleGroups.length > 0) return false;
     if (!rawSelectedRules || rawSelectedRules === 'default' || rawSelectedRules === 'wsll_exp') return true;
     return areRuleArraysEqual(selectedRules, PREDEFINED_RULE_SETS.default);
-}
-
-function normalizeExternalConfigUrl(raw) {
-    if (typeof raw !== 'string') return '';
-    const trimmed = raw.trim();
-    if (!trimmed || /[\r\n]/.test(trimmed)) return '';
-    return trimmed;
-}
-
-async function fetchClashRuleBaseConfig(rawUrl, userAgent) {
-    const url = normalizeExternalConfigUrl(rawUrl);
-    if (!url) {
-        throw new InvalidConfigError('Invalid clash_rule_base URL');
-    }
-    const response = await fetch(url, {
-        headers: {
-            'User-Agent': userAgent || DEFAULT_USER_AGENT
-        }
-    });
-    if (!response.ok) {
-        throw new InvalidConfigError(`Failed to fetch clash_rule_base: HTTP ${response.status}`);
-    }
-    const text = await response.text();
-    const parsed = yaml.load(text);
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-        throw new InvalidConfigError('clash_rule_base must be a Clash YAML object');
-    }
-    return parsed;
 }
 
 function parseBooleanFlag(value) {

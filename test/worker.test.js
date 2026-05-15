@@ -11,11 +11,26 @@ const createTestApp = (overrides = {}) => {
         config: {
             configTtlSeconds: 60,
             shortLinkTtlSeconds: null,
+            wsllExpClashBaseCacheTtlSeconds: 60,
             ...(overrides.config || {})
         }
     };
     return createApp(runtime);
 };
+
+const createTextResponse = (text, { ok = true, status = 200, headers = {} } = {}) => ({
+    ok,
+    status,
+    text: async () => text,
+    headers: {
+        get: (name) => headers[name.toLowerCase()] ?? null
+    }
+});
+
+const mockWsllExpBaseFetchFailure = () => vi.stubGlobal('fetch', vi.fn(async () => createTextResponse('', {
+    ok: false,
+    status: 503
+})));
 
 afterEach(() => {
     vi.unstubAllGlobals();
@@ -73,6 +88,7 @@ describe('Worker', () => {
     });
 
     it('GET /clash returns YAML', async () => {
+        mockWsllExpBaseFetchFailure();
         const app = createTestApp();
         const config = 'vmess://ew0KICAidiI6ICIyIiwNCiAgInBzIjogInRlc3QiLA0KICAiYWRkIjogIjEuMS4xLjEiLA0KICAicG9ydCI6ICI0NDMiLA0KICAiaWQiOiAiYWRkNjY2NjYtODg4OC04ODg4LTg4ODgtODg4ODg4ODg4ODg4IiwNCiAgImFpZCI6ICIwIiwNCiAgInNjeSI6ICJhdXRvIiwNCiAgIm5ldCI6ICJ3cyIsDQogICJ0eXBlIjogIm5vbmUiLA0KICAiaG9zdCI6ICIiLA0KICAicGF0aCI6ICIvIiwNCiAgInRscyI6ICJ0bHMiDQp9';
         const res = await app.request(`http://localhost/clash?config=${encodeURIComponent(config)}`);
@@ -84,6 +100,7 @@ describe('Worker', () => {
     });
 
     it('GET /clash defaults to wsll_exp rules, groups, and base config', async () => {
+        mockWsllExpBaseFetchFailure();
         const app = createTestApp();
         const config = 'ss://YWVzLTEyOC1nY206dGVzdA@example.com:443#香港节点1';
         const res = await app.request(`http://localhost/clash?config=${encodeURIComponent(config)}`);
@@ -110,6 +127,24 @@ describe('Worker', () => {
         ]);
     });
 
+    it('GET /clash fetches and caches the default wsll_exp Clash base config', async () => {
+        const fetchMock = vi.fn(async () => createTextResponse('mixed-port: 7999\nallow-lan: false\nproxies: []\nproxy-groups: []\nrules: []\n'));
+        vi.stubGlobal('fetch', fetchMock);
+        const app = createTestApp({ kv: new MemoryKVAdapter() });
+        const config = 'ss://YWVzLTEyOC1nY206dGVzdA@example.com:443#香港节点1';
+
+        const firstRes = await app.request(`http://localhost/clash?config=${encodeURIComponent(config)}`);
+        const firstParsed = yaml.load(await firstRes.text());
+        const secondRes = await app.request(`http://localhost/clash?config=${encodeURIComponent(config)}`);
+        const secondParsed = yaml.load(await secondRes.text());
+
+        expect(firstRes.status).toBe(200);
+        expect(secondRes.status).toBe(200);
+        expect(firstParsed['mixed-port']).toBe(7999);
+        expect(secondParsed['mixed-port']).toBe(7999);
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
     it('GET /clash supports clash_rule_base override URL', async () => {
         vi.stubGlobal('fetch', vi.fn(async () => ({
             ok: true,
@@ -130,6 +165,7 @@ describe('Worker', () => {
     });
 
     it('GET /clash supports udp=true query and forces udp for proxies', async () => {
+        mockWsllExpBaseFetchFailure();
         const app = createTestApp();
         const config = 'vmess://ew0KICAidiI6ICIyIiwNCiAgInBzIjogInRlc3QiLA0KICAiYWRkIjogIjEuMS4xLjEiLA0KICAicG9ydCI6ICI0NDMiLA0KICAiaWQiOiAiYWRkNjY2NjYtODg4OC04ODg4LTg4ODgtODg4ODg4ODg4ODg4IiwNCiAgImFpZCI6ICIwIiwNCiAgInNjeSI6ICJhdXRvIiwNCiAgIm5ldCI6ICJ3cyIsDQogICJ0eXBlIjogIm5vbmUiLA0KICAiaG9zdCI6ICIiLA0KICAicGF0aCI6ICIvIiwNCiAgInRscyI6ICJ0bHMiDQp9';
         const res = await app.request(`http://localhost/clash?config=${encodeURIComponent(config)}&udp=true`);
@@ -156,6 +192,7 @@ describe('Worker', () => {
     });
 
     it('GET /clash rejects empty url-test proxy groups with a diagnostic error', async () => {
+        mockWsllExpBaseFetchFailure();
         const app = createTestApp();
         const config = `
 proxies:

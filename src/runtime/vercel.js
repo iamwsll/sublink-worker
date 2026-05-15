@@ -11,7 +11,8 @@ export function createVercelRuntime(env = process.env) {
         logger: console,
         config: {
             configTtlSeconds: undefined,
-            shortLinkTtlSeconds: null
+            shortLinkTtlSeconds: null,
+            wsllExpClashBaseCacheTtlSeconds: parseNumber(env.WSLL_EXP_CLASH_BASE_CACHE_TTL_SECONDS) ?? undefined
         }
     };
 }
@@ -80,4 +81,10 @@ function buildCommonRedisOptions(env) {
         options.tls = {};
     }
     return options;
+}
+
+function parseNumber(value) {
+    if (value === undefined || value === null || value === '') return null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
 }

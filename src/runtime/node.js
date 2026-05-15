@@ -10,8 +10,9 @@ export function createNodeRuntime(env = process.env) {
         assetFetcher: createFileAssetFetcher(env.STATIC_DIR || 'public'),
         logger: console,
         config: {
-            configTtlSeconds: parseNumber(env.CONFIG_TTL_SECONDS) || undefined,
-            shortLinkTtlSeconds: parseNumber(env.SHORT_LINK_TTL_SECONDS) || null
+            configTtlSeconds: parseNumber(env.CONFIG_TTL_SECONDS) ?? undefined,
+            shortLinkTtlSeconds: parseNumber(env.SHORT_LINK_TTL_SECONDS) ?? null,
+            wsllExpClashBaseCacheTtlSeconds: parseNumber(env.WSLL_EXP_CLASH_BASE_CACHE_TTL_SECONDS) ?? undefined
         }
     };
 }
