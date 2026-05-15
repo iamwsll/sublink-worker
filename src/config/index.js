@@ -39,7 +39,9 @@ export {
 // Subconverter Config
 export { generateSubconverterConfig } from './subconverterConfig.js';
 export {
+	buildWsllExpClashConfigSections,
 	generateWsllExpSubconverterConfig,
+	WSLL_EXP_CLASH_BASE_CONFIG,
 	WSLL_EXP_CLASH_RULE_BASE,
 	WSLL_EXP_QUANX_RULE_BASE
 } from './wsllExpConfig.js';

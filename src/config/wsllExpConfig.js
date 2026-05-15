@@ -1,6 +1,91 @@
 export const WSLL_EXP_CLASH_RULE_BASE = 'https://raw.githubusercontent.com/iamwsll/myACL4SSR/master/Clash/GeneralClashConfig.yml';
 export const WSLL_EXP_QUANX_RULE_BASE = 'https://gist.githubusercontent.com/iamwsll/e2ab043dd387bf5e28cf790f746978c7/raw/quanx.conf';
 
+export const WSLL_EXP_CLASH_BASE_CONFIG = {
+	'mixed-port': 7890,
+	'socks-port': 7891,
+	'allow-lan': true,
+	'bind-address': '*',
+	'ipv6': true,
+	'mode': 'rule',
+	'log-level': 'info',
+	'external-controller': '127.0.0.1:9090',
+	'experimental': {
+		'ignore-resolve-fail': true,
+		'sniff-tls-sni': true
+	},
+	'hosts': {
+		'dns.alidns.com': ['223.5.5.5', '223.6.6.6'],
+		'doh.pub': ['1.12.12.12', '120.53.53.53'],
+		'dot.pub': ['1.12.12.12', '120.53.53.53'],
+		'cloudflare-dns.com': ['104.16.248.249', '104.16.249.249'],
+		'dns.google': ['8.8.8.8', '8.8.4.4'],
+		'dns.quad9.net': ['9.9.9.9', '149.112.112.112']
+	},
+	'dns': {
+		'enable': true,
+		'ipv6': true,
+		'listen': '127.0.0.1:53',
+		'enhanced-mode': 'fake-ip',
+		'fake-ip-range': '198.18.0.1/16',
+		'fake-ip-filter-mode': 'blacklist',
+		'fake-ip-filter': [
+			'*.lan',
+			'*.local',
+			'*.arpa',
+			'time.*.com',
+			'ntp.*.com',
+			'+.market.xiaomi.com',
+			'localhost.ptlogin2.qq.com',
+			'*.msftncsi.com',
+			'www.msftconnecttest.com',
+			'+.tailscale.net',
+			'100.64.0.0/10'
+		],
+		'prefer-h3': false,
+		'respect-rules': true,
+		'use-hosts': true,
+		'use-system-hosts': false,
+		'default-nameserver': [
+			'https://223.5.5.5/dns-query#skip-cert-verify=true',
+			'https://1.12.12.12/dns-query#skip-cert-verify=true'
+		],
+		'proxy-server-nameserver': [
+			'https://doh.pub/dns-query',
+			'https://dns.alidns.com/dns-query'
+		],
+		'nameserver': [
+			'https://cloudflare-dns.com/dns-query#RULES',
+			'https://dns.google/dns-query#RULES',
+			'https://dns.quad9.net/dns-query#RULES',
+			'https://doh.pub/dns-query',
+			'tls://dot.pub:853',
+			'https://dns.alidns.com/dns-query',
+			'tls://dns.alidns.com:853'
+		]
+	},
+	'cfw-latency-timeout': 3000,
+	'cfw-latency-url': 'http://www.gstatic.com/generate_204',
+	'cfw-conn-break-strategy': {
+		'proxy': 'none',
+		'profile': true,
+		'mode': false
+	},
+	'cfw-proxies-order': 'default',
+	'tun': {
+		'enable': true,
+		'stack': 'mixed',
+		'auto-route': true,
+		'auto-detect-interface': true,
+		'exclude-interface': ['tailscale0'],
+		'route-exclude-address': ['100.64.0.0/10', '192.200.0.0/24']
+	},
+	'proxies': [],
+	'proxy-groups': [],
+	'rule-providers': {},
+	'rules': []
+};
+
 const WSLL_EXP_LINES_BEFORE_BASES = [
 	'[custom]',
 	';不要随意改变关键字，否则会导致出错',
@@ -99,6 +184,164 @@ const WSLL_EXP_LINES_BEFORE_BASES = [
 	'overwrite_original_rules=true',
 	''
 ];
+
+function getWsllExpRulesetLines() {
+	return WSLL_EXP_LINES_BEFORE_BASES.filter(line => line.startsWith('ruleset='));
+}
+
+function getWsllExpProxyGroupLines() {
+	return WSLL_EXP_LINES_BEFORE_BASES.filter(line => line.startsWith('custom_proxy_group='));
+}
+
+function createRuleProviderName(url, usedNames, index) {
+	const fileName = url.split('/').pop() || `ruleset-${index + 1}`;
+	const base = fileName
+		.replace(/\.(list|yaml|yml|mrs)$/i, '')
+		.replace(/[^A-Za-z0-9_-]+/g, '-')
+		.replace(/^-+|-+$/g, '') || `ruleset-${index + 1}`;
+	let name = base;
+	let suffix = 2;
+	while (usedNames.has(name)) {
+		name = `${base}-${suffix}`;
+		suffix += 1;
+	}
+	usedNames.add(name);
+	return name;
+}
+
+function buildWsllExpRuleSections() {
+	const ruleProviders = {};
+	const rules = [];
+	const usedProviderNames = new Set();
+
+	getWsllExpRulesetLines().forEach((line, index) => {
+		const payload = line.slice('ruleset='.length);
+		const commaIndex = payload.indexOf(',');
+		if (commaIndex === -1) return;
+		const groupName = payload.slice(0, commaIndex);
+		const ruleSource = payload.slice(commaIndex + 1);
+
+		if (ruleSource.startsWith('[]')) {
+			const [type, ...parts] = ruleSource.slice(2).split(',');
+			if (type === 'FINAL') {
+				rules.push(`MATCH,${groupName}`);
+			} else if (type === 'GEOIP') {
+				rules.push(`GEOIP,${parts.join(',')},${groupName}`);
+			} else {
+				rules.push(`${type},${parts.join(',')},${groupName}`);
+			}
+			return;
+		}
+
+		const providerName = createRuleProviderName(ruleSource, usedProviderNames, index);
+		ruleProviders[providerName] = {
+			type: 'http',
+			format: 'text',
+			behavior: 'classical',
+			url: ruleSource,
+			path: `./ruleset/${providerName}.list`,
+			interval: 86400
+		};
+		rules.push(`RULE-SET,${providerName},${groupName}`);
+	});
+
+	return { ruleProviders, rules };
+}
+
+function compileGroupMatcher(pattern) {
+	if (!pattern || pattern === '.*') {
+		return () => true;
+	}
+	try {
+		const regex = new RegExp(pattern, 'i');
+		return name => regex.test(name);
+	} catch {
+		return () => false;
+	}
+}
+
+function getMatchedProxyNames(pattern, proxyNames) {
+	const matcher = compileGroupMatcher(pattern);
+	return proxyNames.filter(name => matcher(name));
+}
+
+function parseUrlTestTiming(value = '') {
+	const [interval, , tolerance] = String(value).split(',');
+	const parsedInterval = Number.parseInt(interval, 10);
+	const parsedTolerance = Number.parseInt(tolerance, 10);
+	return {
+		interval: Number.isFinite(parsedInterval) ? parsedInterval : 300,
+		...(Number.isFinite(parsedTolerance) ? { tolerance: parsedTolerance } : {})
+	};
+}
+
+function appendGroupMembers(target, members = [], proxyNames = []) {
+	members.forEach(member => {
+		if (!member) return;
+		if (member.startsWith('[]')) {
+			target.proxies.push(member.slice(2));
+			return;
+		}
+		const matches = getMatchedProxyNames(member, proxyNames);
+		target.proxies.push(...matches);
+	});
+}
+
+function dedupeMembers(group) {
+	if (Array.isArray(group.proxies)) {
+		group.proxies = [...new Set(group.proxies.filter(Boolean))];
+	}
+	if (Array.isArray(group.use)) {
+		group.use = [...new Set(group.use.filter(Boolean))];
+		if (group.use.length === 0) delete group.use;
+	}
+	return group;
+}
+
+function buildWsllExpProxyGroups({ proxyNames = [], providerNames = [] } = {}) {
+	return getWsllExpProxyGroupLines().map(line => {
+		const payload = line.slice('custom_proxy_group='.length);
+		const [name, type, ...parts] = payload.split('`');
+		if (!name || !type) return null;
+
+		if (type === 'url-test') {
+			const [pattern = '.*', url = 'http://www.gstatic.com/generate_204', timing = '300'] = parts;
+			const matchedProxies = getMatchedProxyNames(pattern, proxyNames);
+			const group = {
+				name,
+				type,
+				proxies: matchedProxies.length > 0 ? matchedProxies : proxyNames,
+				url,
+				...parseUrlTestTiming(timing)
+			};
+			if (providerNames.length > 0 && pattern === '.*') {
+				group.use = providerNames;
+			}
+			return dedupeMembers(group);
+		}
+
+		const group = {
+			name,
+			type,
+			proxies: []
+		};
+		appendGroupMembers(group, parts, proxyNames);
+		if (providerNames.length > 0 && parts.includes('.*')) {
+			group.use = providerNames;
+		}
+		return dedupeMembers(group);
+	}).filter(Boolean);
+}
+
+export function buildWsllExpClashConfigSections({ proxyNames = [], providerNames = [] } = {}) {
+	const { ruleProviders, rules } = buildWsllExpRuleSections();
+	const proxyGroups = buildWsllExpProxyGroups({ proxyNames, providerNames });
+	return {
+		ruleProviders,
+		proxyGroups,
+		rules
+	};
+}
 
 function normalizeConfigUrl(value, fallback) {
 	if (typeof value !== 'string') return fallback;

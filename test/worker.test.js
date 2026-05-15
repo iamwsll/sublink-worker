@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { afterEach, describe, it, expect, vi } from 'vitest';
 import yaml from 'js-yaml';
 import { createApp } from '../src/app/createApp.jsx';
 import { MemoryKVAdapter } from '../src/adapters/kv/memoryKv.js';
@@ -16,6 +16,10 @@ const createTestApp = (overrides = {}) => {
     };
     return createApp(runtime);
 };
+
+afterEach(() => {
+    vi.unstubAllGlobals();
+});
 
 describe('Worker', () => {
     it('GET / returns HTML', async () => {
@@ -77,6 +81,52 @@ describe('Worker', () => {
         expect(res.headers.get('content-type')).toContain('text/yaml');
         const text = await res.text();
         expect(text).toContain('proxies:');
+    });
+
+    it('GET /clash defaults to wsll_exp rules, groups, and base config', async () => {
+        const app = createTestApp();
+        const config = 'ss://YWVzLTEyOC1nY206dGVzdA@example.com:443#香港节点1';
+        const res = await app.request(`http://localhost/clash?config=${encodeURIComponent(config)}`);
+        expect(res.status).toBe(200);
+        const parsed = yaml.load(await res.text());
+
+        expect(parsed['mixed-port']).toBe(7890);
+        expect(parsed['allow-lan']).toBe(true);
+        expect(parsed['rule-providers'].BanAD.url).toBe('https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/BanAD.list');
+        expect(parsed.rules).toContain('RULE-SET,BanAD,🛑 广告拦截');
+        expect(parsed.rules).toContain('DOMAIN-SUFFIX,xn--ngstr-lra8j.com,📢 谷歌🇨🇳Play下载');
+        expect(parsed.rules).toContain('GEOIP,CN,🎯 全球直连');
+        const nodeSelect = (parsed['proxy-groups'] || []).find(g => g?.name === '🚀 节点选择');
+        expect(nodeSelect?.proxies).toEqual([
+            '🚀 手动切换',
+            '🇭🇰 香港节点',
+            '🇨🇳 台湾节点',
+            '🇸🇬 狮城节点',
+            '🇯🇵 日本节点',
+            '🇺🇲 美国节点',
+            '🇰🇷 韩国节点',
+            '♻️ 自动选择',
+            'DIRECT'
+        ]);
+    });
+
+    it('GET /clash supports clash_rule_base override URL', async () => {
+        vi.stubGlobal('fetch', vi.fn(async () => ({
+            ok: true,
+            status: 200,
+            text: async () => 'mixed-port: 7999\nallow-lan: false\nproxies: []\nproxy-groups: []\nrules: []\n',
+            headers: { get: () => null }
+        })));
+
+        const app = createTestApp();
+        const config = 'ss://YWVzLTEyOC1nY206dGVzdA@example.com:443#香港节点1';
+        const res = await app.request(`http://localhost/clash?config=${encodeURIComponent(config)}&clash_rule_base=${encodeURIComponent('https://example.com/base.yml')}`);
+        expect(res.status).toBe(200);
+        const parsed = yaml.load(await res.text());
+
+        expect(parsed['mixed-port']).toBe(7999);
+        expect(parsed['allow-lan']).toBe(false);
+        expect(parsed.rules).toContain('RULE-SET,BanAD,🛑 广告拦截');
     });
 
     it('GET /clash supports udp=true query and forces udp for proxies', async () => {

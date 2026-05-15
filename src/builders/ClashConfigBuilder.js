@@ -1,5 +1,5 @@
 import yaml from 'js-yaml';
-import { CLASH_CONFIG, generateRules, generateClashRuleSets, getOutbounds, PREDEFINED_RULE_SETS, DIRECT_DEFAULT_RULES } from '../config/index.js';
+import { CLASH_CONFIG, generateRules, generateClashRuleSets, getOutbounds, PREDEFINED_RULE_SETS, DIRECT_DEFAULT_RULES, buildWsllExpClashConfigSections } from '../config/index.js';
 import { BaseConfigBuilder } from './BaseConfigBuilder.js';
 import { deepCopy, groupProxiesByCountry } from '../utils.js';
 import { addProxyWithDedup } from './helpers/proxyHelpers.js';
@@ -716,6 +716,46 @@ export class ClashConfigBuilder extends BaseConfigBuilder {
         ];
 
         // Enable Clash UI (external controller/dashboard) when requested or when custom UI params are provided
+        if (this.enableClashUI || this.externalController || this.externalUiDownloadUrl) {
+            const defaultController = '0.0.0.0:9090';
+            const defaultUiPath = './ui';
+            const defaultUiName = 'zashboard';
+            const defaultUiUrl = 'https://gh-proxy.com/https://github.com/Zephyruso/zashboard/archive/refs/heads/gh-pages.zip';
+            const defaultSecret = '';
+
+            const controller = this.externalController || this.config['external-controller'] || defaultController;
+            const uiPath = this.config['external-ui'] || defaultUiPath;
+            const uiName = this.config['external-ui-name'] || defaultUiName;
+            const uiUrl = this.externalUiDownloadUrl || this.config['external-ui-url'] || defaultUiUrl;
+            const secret = this.config['secret'] ?? defaultSecret;
+
+            this.config['external-controller'] = controller;
+            this.config['external-ui'] = uiPath;
+            this.config['external-ui-name'] = uiName;
+            this.config['external-ui-url'] = uiUrl;
+            this.config['secret'] = secret;
+        }
+
+        return yaml.dump(this.config);
+    }
+
+    formatWsllExpConfig() {
+        const { ruleProviders, proxyGroups, rules } = buildWsllExpClashConfigSections({
+            proxyNames: this.getProxyList(),
+            providerNames: this.getAllProviderNames()
+        });
+
+        this.config['rule-providers'] = ruleProviders;
+        this.config['proxy-groups'] = proxyGroups;
+        this.config.rules = rules;
+
+        if (this.providerUrls.length > 0) {
+            this.config['proxy-providers'] = {
+                ...this.config['proxy-providers'],
+                ...this.generateProxyProviders()
+            };
+        }
+
         if (this.enableClashUI || this.externalController || this.externalUiDownloadUrl) {
             const defaultController = '0.0.0.0:9090';
             const defaultUiPath = './ui';

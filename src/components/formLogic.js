@@ -565,6 +565,9 @@ export const formLogicFn = (t) => {
                     if (this.forceUdp) params.append('udp', 'true');
                     if (this.externalController) params.append('external_controller', this.externalController);
                     if (this.externalUiDownloadUrl) params.append('external_ui_download_url', this.externalUiDownloadUrl);
+                    if (this.clashRuleBase && this.clashRuleBase.trim()) {
+                        params.append('clash_rule_base', this.clashRuleBase.trim());
+                    }
 
                     // Add configId if present in URL
                     const urlParams = new URLSearchParams(window.location.search);
