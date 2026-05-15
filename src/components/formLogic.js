@@ -116,7 +116,7 @@ export const formLogicFn = (t) => {
             customRuleGroups: [],
             clashRuleBase: '',
             enableClashUI: false,
-            forceUdp: false,
+            forceUdp: true,
             externalController: '',
             externalUiDownloadUrl: '',
             configType: 'singbox',
@@ -165,7 +165,8 @@ export const formLogicFn = (t) => {
                 this.groupByCountry = localStorage.getItem('groupByCountry') === 'true';
                 this.includeAutoSelect = localStorage.getItem('includeAutoSelect') !== 'false';
                 this.enableClashUI = localStorage.getItem('enableClashUI') === 'true';
-                this.forceUdp = localStorage.getItem('forceUdp') === 'true';
+                const savedForceUdp = localStorage.getItem('forceUdp');
+                this.forceUdp = savedForceUdp === null ? true : savedForceUdp !== 'false';
                 const savedGroupDefaults = localStorage.getItem('groupDefaults');
                 if (savedGroupDefaults) {
                     try {
@@ -539,7 +540,7 @@ export const formLogicFn = (t) => {
                         params.append('group_defaults', JSON.stringify(this.groupDefaults));
                     }
                     if (this.enableClashUI) params.append('enable_clash_ui', 'true');
-                    if (this.forceUdp) params.append('udp', 'true');
+                    params.append('udp', this.forceUdp ? 'true' : 'false');
                     if (this.externalController) params.append('external_controller', this.externalController);
                     if (this.externalUiDownloadUrl) params.append('external_ui_download_url', this.externalUiDownloadUrl);
                     if (this.clashRuleBase && this.clashRuleBase.trim()) {
@@ -790,7 +791,8 @@ export const formLogicFn = (t) => {
                     }
                 }
                 this.enableClashUI = params.get('enable_clash_ui') === 'true';
-                this.forceUdp = params.get('udp') === 'true';
+                const hasUdpParam = params.has('udp');
+                this.forceUdp = params.get('udp') !== 'false';
 
                 const externalController = params.get('external_controller');
                 if (externalController) {
@@ -815,7 +817,7 @@ export const formLogicFn = (t) => {
 
                 // Expand advanced options if any advanced settings are present
                 if (selectedRules || customRules || customRuleGroups || this.groupByCountry || this.enableClashUI ||
-                    this.forceUdp || externalController || externalUiDownloadUrl || ua || configId || groupDefaults) {
+                    hasUdpParam || externalController || externalUiDownloadUrl || ua || configId || groupDefaults) {
                     this.showAdvanced = true;
                 }
 

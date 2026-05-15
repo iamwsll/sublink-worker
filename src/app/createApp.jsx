@@ -148,7 +148,7 @@ export function createApp(bindings = {}) {
             const externalController = c.req.query('external_controller');
             const externalUiDownloadUrl = c.req.query('external_ui_download_url');
             const configId = c.req.query('configId');
-            const forceUdp = parseBool(c.req.query('udp'));
+            const forceUdp = parseBool(c.req.query('udp'), true);
             const clashRuleBase = c.req.query('clash_rule_base') || c.req.query('clashRuleBase');
             const clashRuleBaseCacheTtl = normalizeClashRuleBaseCacheTtl(
                 c.req.query('clash_rule_base_ttl') || c.req.query('clashRuleBaseTtl'),

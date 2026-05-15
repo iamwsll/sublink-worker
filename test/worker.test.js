@@ -113,6 +113,7 @@ describe('Worker', () => {
         expect(parsed['mixed-port']).toBe(7890);
         expect(parsed['allow-lan']).toBe(true);
         expect(parsed['rule-providers'].BanAD.url).toBe('https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/BanAD.list');
+        expect(parsed.proxies?.[0]?.udp).toBe(true);
         expect(parsed.rules).toContain('RULE-SET,BanAD,🛑 广告拦截');
         expect(parsed.rules).toContain('DOMAIN-SUFFIX,xn--ngstr-lra8j.com,📢 谷歌🇨🇳Play下载');
         expect(parsed.rules).toContain('GEOIP,CN,🎯 全球直连');
@@ -185,6 +186,16 @@ describe('Worker', () => {
         const text = await res.text();
         const parsed = yaml.load(text);
         expect(parsed?.proxies?.[0]?.udp).toBe(true);
+    });
+
+    it('GET /clash supports udp=false query to disable the default UDP override', async () => {
+        mockWsllExpBaseFetchFailure();
+        const app = createTestApp();
+        const config = 'ss://YWVzLTEyOC1nY206dGVzdA@example.com:443#Test';
+        const res = await app.request(`http://localhost/clash?config=${encodeURIComponent(config)}&udp=false`);
+        expect(res.status).toBe(200);
+        const parsed = yaml.load(await res.text());
+        expect(parsed?.proxies?.[0]?.udp).toBe(false);
     });
 
     it('GET /clash supports group_defaults to set outbound group default option', async () => {

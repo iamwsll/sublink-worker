@@ -31,10 +31,11 @@ describe('formLogic toString fix', () => {
     expect(typeof data.submitForm).toBe('function');
     expect(typeof data.toggleAccordion).toBe('function');
     expect(typeof data.translateOutbound).toBe('function');
+    expect(data.forceUdp).toBe(true);
     expect(data.showAdvanced).toBe(false);
   });
 
-  it('restores UDP option from URL and expands advanced options', () => {
+  it('keeps UDP enabled by default when restoring a URL without udp param', () => {
     const fakeWindow = {
       APP_TRANSLATIONS: {},
       PREDEFINED_RULE_SETS: {},
@@ -45,10 +46,58 @@ describe('formLogic toString fix', () => {
     const fn = new Function('window', '(' + formLogicFn.toString() + ')(); return window;');
     const result = fn(fakeWindow);
     const data = result.formData();
-    data.populateFormFromUrl(new URL('https://example.com/clash?config=abc&udp=true'));
+    data.populateFormFromUrl(new URL('https://example.com/clash?config=abc'));
 
     expect(data.forceUdp).toBe(true);
+    expect(data.showAdvanced).toBe(false);
+  });
+
+  it('restores explicit UDP option from URL and expands advanced options', () => {
+    const fakeWindow = {
+      APP_TRANSLATIONS: {},
+      PREDEFINED_RULE_SETS: {},
+      location: { href: 'https://example.com/', search: '' },
+      history: { replaceState: () => { } },
+      dispatchEvent: () => { }
+    };
+    const fn = new Function('window', '(' + formLogicFn.toString() + ')(); return window;');
+    const result = fn(fakeWindow);
+    const data = result.formData();
+    data.populateFormFromUrl(new URL('https://example.com/clash?config=abc&udp=false'));
+
+    expect(data.forceUdp).toBe(false);
     expect(data.showAdvanced).toBe(true);
+  });
+
+  it('always writes the UDP choice into generated links', async () => {
+    const fakeWindow = {
+      APP_TRANSLATIONS: {},
+      PREDEFINED_RULE_SETS: {},
+      location: { origin: 'https://example.com', href: 'https://example.com/', search: '' },
+      history: { replaceState: () => { } },
+      dispatchEvent: () => { }
+    };
+    const oldDocument = globalThis.document;
+    globalThis.document = {
+      querySelector: (selector) => selector === 'input[name="customRules"]' ? { value: '[]' } : null
+    };
+    try {
+      const fn = new Function('window', '(' + formLogicFn.toString() + ')(); return window;');
+      const result = fn(fakeWindow);
+      const data = result.formData();
+      data.input = 'ss://YWVzLTEyOC1nY206dGVzdA@example.com:443#Test';
+
+      await data.submitForm();
+      expect(new URL(data.generatedLinks.clash).searchParams.get('udp')).toBe('true');
+
+      data.forceUdp = false;
+      await data.submitForm();
+      expect(new URL(data.generatedLinks.clash).searchParams.get('udp')).toBe('false');
+
+      await new Promise(resolve => setTimeout(resolve, 150));
+    } finally {
+      globalThis.document = oldDocument;
+    }
   });
 
   it('applies preset rule defaults for the default template', () => {
