@@ -38,6 +38,11 @@ export {
 
 // Subconverter Config
 export { generateSubconverterConfig } from './subconverterConfig.js';
+export {
+	generateWsllExpSubconverterConfig,
+	WSLL_EXP_CLASH_RULE_BASE,
+	WSLL_EXP_QUANX_RULE_BASE
+} from './wsllExpConfig.js';
 
 // Platform Configs
 export { SING_BOX_CONFIG, SING_BOX_CONFIG_V1_11 } from './singboxConfig.js';

@@ -16,7 +16,7 @@ import { ShortLinkService } from '../services/shortLinkService.js';
 import { ConfigStorageService } from '../services/configStorageService.js';
 import { ServiceError, MissingDependencyError } from '../services/errors.js';
 import { normalizeRuntime } from '../runtime/runtimeConfig.js';
-import { PREDEFINED_RULE_SETS, SING_BOX_CONFIG, SING_BOX_CONFIG_V1_11, generateSubconverterConfig } from '../config/index.js';
+import { PREDEFINED_RULE_SETS, SING_BOX_CONFIG, SING_BOX_CONFIG_V1_11, generateSubconverterConfig, generateWsllExpSubconverterConfig } from '../config/index.js';
 import { normalizeCustomRuleGroups } from '../utils/customRuleGroups.js';
 
 const DEFAULT_USER_AGENT = 'curl/7.74.0';
@@ -235,11 +235,23 @@ export function createApp(bindings = {}) {
     app.get('/subconverter', (c) => {
         try {
             const rawSelectedRules = c.req.query('selectedRules');
+            const clashRuleBase = c.req.query('clash_rule_base') || c.req.query('clashRuleBase');
+            const quanxRuleBase = c.req.query('quanx_rule_base') || c.req.query('quanxRuleBase');
+            const usesDefaultWsllExp = !rawSelectedRules || rawSelectedRules === 'default' || rawSelectedRules === 'wsll_exp';
+
+            if (usesDefaultWsllExp) {
+                const config = generateWsllExpSubconverterConfig({
+                    clashRuleBase,
+                    quanxRuleBase
+                });
+                return c.text(config, 200, {
+                    'Content-Type': 'text/plain; charset=utf-8'
+                });
+            }
+
             let selectedRules;
 
-            if (!rawSelectedRules) {
-                selectedRules = PREDEFINED_RULE_SETS.default;
-            } else if (PREDEFINED_RULE_SETS[rawSelectedRules]) {
+            if (PREDEFINED_RULE_SETS[rawSelectedRules]) {
                 selectedRules = PREDEFINED_RULE_SETS[rawSelectedRules];
             } else {
                 try {

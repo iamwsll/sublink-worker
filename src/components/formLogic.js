@@ -113,6 +113,7 @@ export const formLogicFn = (t) => {
             includeAutoSelect: true,
             groupDefaults: {},
             customRuleGroups: [],
+            clashRuleBase: '',
             enableClashUI: false,
             forceUdp: false,
             externalController: '',
@@ -184,6 +185,7 @@ export const formLogicFn = (t) => {
                     }
                 }
                 this.customUA = localStorage.getItem('userAgent') || '';
+                this.clashRuleBase = localStorage.getItem('clashRuleBase') || '';
                 this.configEditor = localStorage.getItem('configEditor') || '';
                 this.configType = localStorage.getItem('configType') || 'singbox';
                 this.customShortCode = localStorage.getItem('customShortCode') || '';
@@ -237,6 +239,7 @@ export const formLogicFn = (t) => {
                     }, GROUP_DEFAULTS_SAVE_DEBOUNCE_MS);
                 }, { deep: true });
                 this.$watch('customRuleGroups', val => localStorage.setItem('customRuleGroups', JSON.stringify(val || [])), { deep: true });
+                this.$watch('clashRuleBase', val => localStorage.setItem('clashRuleBase', val || ''));
                 this.$watch('externalController', val => localStorage.setItem('externalController', val));
                 this.$watch('externalUiDownloadUrl', val => localStorage.setItem('externalUiDownloadUrl', val));
                 this.$watch('customUA', val => localStorage.setItem('userAgent', val));
@@ -386,6 +389,9 @@ export const formLogicFn = (t) => {
 
                 if (this.groupByCountry) {
                     params.append('group_by_country', 'true');
+                }
+                if (this.clashRuleBase && this.clashRuleBase.trim()) {
+                    params.append('clash_rule_base', this.clashRuleBase.trim());
                 }
 
                 // Include lang parameter so subconverter gets correct group names

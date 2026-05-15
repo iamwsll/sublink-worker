@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { createApp } from '../src/app/createApp.jsx';
 import { MemoryKVAdapter } from '../src/adapters/kv/memoryKv.js';
-import { PREDEFINED_RULE_SETS } from '../src/config/index.js';
+import { PREDEFINED_RULE_SETS, WSLL_EXP_CLASH_RULE_BASE } from '../src/config/index.js';
 
 const createTestApp = (overrides = {}) => {
     const runtime = {
@@ -34,18 +34,31 @@ describe('GET /subconverter', () => {
         const res = await app.request('http://localhost/subconverter');
         const text = await res.text();
 
-        // default preset includes ad block plus common service groups
-        PREDEFINED_RULE_SETS.default.forEach(ruleName => {
-            // Each selected rule should produce at least one ruleset line
-            // (either GEOSITE or GEOIP)
-            expect(text).toMatch(/ruleset=/);
-        });
-
-        // Check for specific rules from default set
+        expect(text).toContain('ruleset=🎯 全球直连,https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/LocalAreaNetwork.list');
         expect(text).toContain('ruleset=🛑 广告拦截,https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/BanAD.list');
-        expect(text).toContain('GEOSITE,google');
-        expect(text).toContain('GEOSITE,youtube');
-        expect(text).toContain('GEOIP,telegram');
+        expect(text).toContain('ruleset=📢 谷歌,https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/Google.list');
+        expect(text).toContain('ruleset=🐟 漏网之鱼,[]FINAL');
+        expect(text).toContain('custom_proxy_group=🚀 节点选择`select`[]🚀 手动切换`[]🇭🇰 香港节点`[]🇨🇳 台湾节点`[]🇸🇬 狮城节点`[]🇯🇵 日本节点`[]🇺🇲 美国节点`[]🇰🇷 韩国节点`[]♻️ 自动选择`[]DIRECT');
+        expect(text).toContain(`clash_rule_base=${WSLL_EXP_CLASH_RULE_BASE}`);
+    });
+
+    it('uses wsll_exp template when selectedRules=default', async () => {
+        const app = createTestApp();
+        const res = await app.request('http://localhost/subconverter?selectedRules=default');
+        const text = await res.text();
+
+        expect(text).toContain('custom_proxy_group=🛡️ 隐私防护`select`[]REJECT`[]DIRECT');
+        expect(text).toContain('custom_proxy_group=🇭🇰 香港节点`url-test`(港|HK|hk|Hong Kong|HongKong|hongkong)`http://www.gstatic.com/generate_204`300,,50');
+    });
+
+    it('supports overriding wsll_exp clash_rule_base', async () => {
+        const app = createTestApp();
+        const clashRuleBase = 'https://example.com/custom-clash-base.yml';
+        const res = await app.request(`http://localhost/subconverter?clash_rule_base=${encodeURIComponent(clashRuleBase)}`);
+        const text = await res.text();
+
+        expect(text).toContain(`clash_rule_base=${clashRuleBase}`);
+        expect(text).not.toContain(`clash_rule_base=${WSLL_EXP_CLASH_RULE_BASE}`);
     });
 
     it('accepts minimal preset', async () => {
@@ -388,9 +401,8 @@ describe('GET /subconverter', () => {
             const res = await app.request('http://localhost/subconverter');
             expect(res.status).toBe(200);
             const text = await res.text();
-            // default preset includes Google and Youtube
-            expect(text).toContain('GEOSITE,google');
-            expect(text).toContain('GEOSITE,youtube');
+            expect(text).toContain('ruleset=📢 谷歌,https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/Google.list');
+            expect(text).toContain('ruleset=📹 油管视频,https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/YouTube.list');
             expect(text).toContain('ruleset=🛑 广告拦截,https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/BanAD.list');
         });
     });
