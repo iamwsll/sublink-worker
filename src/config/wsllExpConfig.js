@@ -298,6 +298,20 @@ function dedupeMembers(group) {
 	return group;
 }
 
+function ensureSelectGroupHasMembers(group, proxyNames = [], providerNames = []) {
+	const hasProxies = Array.isArray(group.proxies) && group.proxies.length > 0;
+	const hasProviders = Array.isArray(group.use) && group.use.length > 0;
+	if (hasProxies || hasProviders || group.type !== 'select') {
+		return group;
+	}
+	if (providerNames.length > 0) {
+		group.use = providerNames;
+		return group;
+	}
+	group.proxies = proxyNames.length > 0 ? proxyNames : ['DIRECT'];
+	return group;
+}
+
 function buildWsllExpProxyGroups({ proxyNames = [], providerNames = [] } = {}) {
 	return getWsllExpProxyGroupLines().map(line => {
 		const payload = line.slice('custom_proxy_group='.length);
@@ -329,7 +343,7 @@ function buildWsllExpProxyGroups({ proxyNames = [], providerNames = [] } = {}) {
 		if (providerNames.length > 0 && parts.includes('.*')) {
 			group.use = providerNames;
 		}
-		return dedupeMembers(group);
+		return ensureSelectGroupHasMembers(dedupeMembers(group), proxyNames, providerNames);
 	}).filter(Boolean);
 }
 

@@ -128,6 +128,14 @@ describe('Worker', () => {
             '♻️ 自动选择',
             'DIRECT'
         ]);
+        const invalidGroups = (parsed['proxy-groups'] || []).filter(group => {
+            const hasProxies = Array.isArray(group?.proxies) && group.proxies.length > 0;
+            const hasProviders = Array.isArray(group?.use) && group.use.length > 0;
+            return !hasProxies && !hasProviders;
+        });
+        expect(invalidGroups).toEqual([]);
+        const netflixNode = (parsed['proxy-groups'] || []).find(g => g?.name === '🎥 奈飞节点');
+        expect(netflixNode?.proxies).toContain('香港节点1');
     });
 
     it('GET /clash fetches and caches the default wsll_exp Clash base config', async () => {
