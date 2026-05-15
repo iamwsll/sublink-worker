@@ -44,7 +44,10 @@ describe('Worker', () => {
         expect(res.headers.get('content-type')).toContain('text/html');
         const text = await res.text();
         expect(text).toContain('Sublink Worker');
-        expect(text).toContain('<option value="REJECT">REJECT</option>');
+        expect(text).toContain('wsll_exp.ini');
+        expect(text).not.toContain('🌐 社交媒体');
+        expect(text).not.toContain('🎬 流媒体');
+        expect(text).not.toContain('📚 教育资源');
     });
 
     it('GET /singbox returns JSON', async () => {

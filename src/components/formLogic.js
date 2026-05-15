@@ -1,5 +1,6 @@
 export const formLogicFn = (t) => {
     const GROUP_DEFAULTS_SAVE_DEBOUNCE_MS = 120;
+    const FIXED_RULE_PRESET = 'default';
     const DIRECT_DEFAULT_RULES = new Set(['Private', 'Location:CN']);
     const REJECT_DEFAULT_RULES = new Set(['Ad Block', '隐私防护', 'AdBlock', '应用净化']);
     // Keep this helper inlined instead of importing from utils so formLogicFn.toString()
@@ -107,7 +108,7 @@ export const formLogicFn = (t) => {
                 ua: false          // User Agent
             },
             selectedRules: [],
-            selectedPredefinedRule: 'default',
+            selectedPredefinedRule: FIXED_RULE_PRESET,
             subconverterCopied: false,
             groupByCountry: false,
             includeAutoSelect: true,
@@ -176,34 +177,17 @@ export const formLogicFn = (t) => {
                 }
                 this.externalController = localStorage.getItem('externalController') || '';
                 this.externalUiDownloadUrl = localStorage.getItem('externalUiDownloadUrl') || '';
-                const savedCustomRuleGroups = localStorage.getItem('customRuleGroups');
-                if (savedCustomRuleGroups) {
-                    try {
-                        this.customRuleGroups = normalizeCustomRuleGroups(JSON.parse(savedCustomRuleGroups));
-                    } catch {
-                        // Ignore malformed local cache and continue with defaults.
-                    }
-                }
+                this.customRuleGroups = [];
                 this.customUA = localStorage.getItem('userAgent') || '';
                 this.clashRuleBase = localStorage.getItem('clashRuleBase') || '';
                 this.configEditor = localStorage.getItem('configEditor') || '';
                 this.configType = localStorage.getItem('configType') || 'singbox';
                 this.customShortCode = localStorage.getItem('customShortCode') || '';
-                const savedSelectedPredefinedRule = localStorage.getItem('selectedPredefinedRule');
-                if (savedSelectedPredefinedRule) {
-                    this.selectedPredefinedRule = savedSelectedPredefinedRule;
-                }
-                const savedSelectedRules = localStorage.getItem('selectedRules');
-                if (savedSelectedRules) {
-                    try {
-                        const parsedSelectedRules = JSON.parse(savedSelectedRules);
-                        if (Array.isArray(parsedSelectedRules)) {
-                            this.selectedRules = parsedSelectedRules;
-                        }
-                    } catch {
-                        // Ignore malformed local cache and continue with defaults.
-                    }
-                }
+                this.selectedPredefinedRule = FIXED_RULE_PRESET;
+                this.selectedRules = [];
+                localStorage.removeItem?.('selectedPredefinedRule');
+                localStorage.removeItem?.('selectedRules');
+                localStorage.removeItem?.('customRuleGroups');
                 const initialUrlParams = new URLSearchParams(window.location.search);
                 this.currentConfigId = initialUrlParams.get('configId') || '';
 
@@ -238,7 +222,7 @@ export const formLogicFn = (t) => {
                         localStorage.setItem('groupDefaults', JSON.stringify(val || {}));
                     }, GROUP_DEFAULTS_SAVE_DEBOUNCE_MS);
                 }, { deep: true });
-                this.$watch('customRuleGroups', val => localStorage.setItem('customRuleGroups', JSON.stringify(val || [])), { deep: true });
+                this.$watch('customRuleGroups', () => localStorage.removeItem?.('customRuleGroups'), { deep: true });
                 this.$watch('clashRuleBase', val => localStorage.setItem('clashRuleBase', val || ''));
                 this.$watch('externalController', val => localStorage.setItem('externalController', val));
                 this.$watch('externalUiDownloadUrl', val => localStorage.setItem('externalUiDownloadUrl', val));
@@ -252,11 +236,9 @@ export const formLogicFn = (t) => {
                     this.resetConfigValidation();
                 });
                 this.$watch('customShortCode', val => localStorage.setItem('customShortCode', val));
-                this.$watch('selectedPredefinedRule', val => localStorage.setItem('selectedPredefinedRule', val));
+                this.$watch('selectedPredefinedRule', () => localStorage.removeItem?.('selectedPredefinedRule'));
                 this.$watch('selectedRules', val => {
-                    if (Array.isArray(val)) {
-                        localStorage.setItem('selectedRules', JSON.stringify(val));
-                    }
+                    if (Array.isArray(val)) localStorage.removeItem?.('selectedRules');
                 }, { deep: true });
                 this.$watch('accordionSections', val => localStorage.setItem('accordionSections', JSON.stringify(val)), { deep: true });
             },
@@ -266,7 +248,7 @@ export const formLogicFn = (t) => {
             },
 
             applyPredefinedRule() {
-                if (this.selectedPredefinedRule === 'custom') return;
+                this.selectedPredefinedRule = FIXED_RULE_PRESET;
 
                 // PREDEFINED_RULE_SETS will be injected globally
                 const rules = window.PREDEFINED_RULE_SETS;
@@ -358,12 +340,7 @@ export const formLogicFn = (t) => {
                 const origin = window.location.origin;
                 const params = new URLSearchParams();
 
-                // Use preset name directly if a predefined rule set is selected
-                if (this.selectedPredefinedRule && this.selectedPredefinedRule !== 'custom') {
-                    params.append('selectedRules', this.selectedPredefinedRule);
-                } else if (this.selectedPredefinedRule === 'custom') {
-                    params.append('selectedRules', JSON.stringify(this.selectedRules));
-                }
+                params.append('selectedRules', FIXED_RULE_PRESET);
 
                 // Include customRules when available (best-effort; may make URL long)
                 try {
@@ -548,7 +525,7 @@ export const formLogicFn = (t) => {
                     const params = new URLSearchParams();
                     params.append('config', this.input);
                     params.append('ua', this.customUA);
-                    params.append('selectedRules', JSON.stringify(this.selectedRules));
+                    params.append('selectedRules', FIXED_RULE_PRESET);
                     params.append('customRules', JSON.stringify(customRules));
                     const customRuleGroups = this.getCustomRuleGroupsForPayload();
                     if (customRuleGroups.length > 0) {
@@ -776,17 +753,8 @@ export const formLogicFn = (t) => {
 
                 // Extract selectedRules
                 const selectedRules = params.get('selectedRules');
-                if (selectedRules) {
-                    try {
-                        const parsed = JSON.parse(selectedRules);
-                        if (Array.isArray(parsed)) {
-                            this.selectedRules = parsed;
-                            this.selectedPredefinedRule = 'custom';
-                        }
-                    } catch (e) {
-                        console.warn('Failed to parse selectedRules:', e);
-                    }
-                }
+                this.selectedPredefinedRule = FIXED_RULE_PRESET;
+                this.applyPredefinedRule();
 
                 // Extract customRules
                 const customRules = params.get('customRules');
@@ -805,13 +773,7 @@ export const formLogicFn = (t) => {
                 }
 
                 const customRuleGroups = params.get('customRuleGroups');
-                if (customRuleGroups) {
-                    try {
-                        this.customRuleGroups = normalizeCustomRuleGroups(JSON.parse(customRuleGroups));
-                    } catch (e) {
-                        console.warn('Failed to parse customRuleGroups:', e);
-                    }
-                }
+                this.customRuleGroups = [];
 
                 // Extract other parameters
                 this.groupByCountry = params.get('group_by_country') === 'true';

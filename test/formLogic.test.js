@@ -116,7 +116,7 @@ describe('formLogic toString fix', () => {
     expect(data.getFollowBuiltInDefaultLabel('My Custom Group', true)).toBe('跟随内置默认 (🚀 节点选择)');
   });
 
-  it('restores custom selected rules from localStorage during init', () => {
+  it('ignores stale custom selected rules from localStorage during init', () => {
     const fakeWindow = {
       APP_TRANSLATIONS: {},
       PREDEFINED_RULE_SETS: {
@@ -134,9 +134,11 @@ describe('formLogic toString fix', () => {
     ]);
     const originalLocalStorage = globalThis.localStorage;
     const setItemCalls = [];
+    const removeItemCalls = [];
     globalThis.localStorage = {
       getItem: (key) => storage.get(key) ?? null,
-      setItem: (key, value) => setItemCalls.push([key, value])
+      setItem: (key, value) => setItemCalls.push([key, value]),
+      removeItem: (key) => removeItemCalls.push(key)
     };
 
     const watched = [];
@@ -148,18 +150,27 @@ describe('formLogic toString fix', () => {
 
     try {
       data.init();
-      expect(data.selectedPredefinedRule).toBe('custom');
-      expect(data.selectedRules).toEqual(['隐私防护', 'AdBlock', '应用净化']);
+      expect(data.selectedPredefinedRule).toBe('default');
+      expect(data.selectedRules).toEqual(['Ad Block', 'Google']);
       expect(watched).toContain('selectedPredefinedRule');
       expect(watched).toContain('selectedRules');
       expect(setItemCalls).toEqual([]);
+      expect(removeItemCalls).toEqual([
+        'selectedPredefinedRule',
+        'selectedRules',
+        'customRuleGroups'
+      ]);
 
       watchHandlers.get('selectedPredefinedRule')('default');
       watchHandlers.get('selectedRules')(['Google', 'Github']);
       watchHandlers.get('selectedRules')(null);
-      expect(setItemCalls).toEqual([
-        ['selectedPredefinedRule', 'default'],
-        ['selectedRules', JSON.stringify(['Google', 'Github'])]
+      expect(setItemCalls).toEqual([]);
+      expect(removeItemCalls).toEqual([
+        'selectedPredefinedRule',
+        'selectedRules',
+        'customRuleGroups',
+        'selectedPredefinedRule',
+        'selectedRules'
       ]);
     } finally {
       globalThis.localStorage = originalLocalStorage;
